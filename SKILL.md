@@ -3,7 +3,7 @@ name: gh-ci-helper
 description: GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # GitHub CI & PR Helper

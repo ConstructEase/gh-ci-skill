@@ -61,6 +61,9 @@ _resolve_run() {
 # Usage: body=$(_read_body "$@")
 _read_body() {
   if [ "${1:-}" = "--file" ]; then
+    if [ -z "${2:-}" ]; then
+      echo "error: --file requires a path argument" >&2; exit 1
+    fi
     cat "$2"
   elif [ -n "${1:-}" ]; then
     printf '%s' "$1"
@@ -138,7 +141,7 @@ case "$cmd" in
       sleep "$interval"
     done
     echo "Timeout after $((interval * max))s — run $run_id status=$status" >&2
-    gh run view "$run_id" --json status,conclusion,name,displayTitle,url
+    gh run view "$run_id" --json status,conclusion,name,displayTitle,url || true
     exit 124
     ;;
 
