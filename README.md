@@ -5,7 +5,7 @@ An [agent skill](https://github.com/vercel-labs/skills) that wraps the GitHub CL
 ## Install
 
 ```bash
-npx skills add caleblenoir/gh-ci-skill
+npx skills add ConstructEase/gh-ci-skill
 ```
 
 ## What it does
