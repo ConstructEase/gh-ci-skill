@@ -196,7 +196,7 @@ case "$cmd" in
 
   check-wait)
     # Poll until a named check run completes. Prints the final JSON on stdout
-    # and progress lines to stderr. Exits 0 if completed or not found, 124 on timeout.
+    # and progress lines to stderr. Exits 0 if completed, 124 on timeout (including if never found).
     # Usage: ci.sh check-wait <name> [ref] [--interval 30] [--max 10]
     if [ $# -eq 0 ]; then
       echo "Usage: ci.sh check-wait <name> [ref] [--interval 30] [--max 10]" >&2
@@ -229,9 +229,10 @@ case "$cmd" in
         '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]')
       count=$(echo "$result" | jq 'length')
       if [ "$count" -eq 0 ]; then
-        echo "Check run \"$check_name\" not found for ref $ref" >&2
-        echo '[]'
-        exit 0
+        attempt=$((attempt + 1))
+        echo "[$attempt/$max] check \"$check_name\" not found yet — waiting ${interval}s" >&2
+        sleep "$interval"
+        continue
       fi
       status=$(echo "$result" | jq -r '.[0].status')
       if [ "$status" = "completed" ]; then
@@ -432,8 +433,8 @@ Check run commands:
       List check runs for a commit ref (SHA, branch, or tag).
       Defaults to HEAD. Filter by name with --name.
   check-wait <name> [ref] [--interval 30] [--max 10]
-      Poll until a named check run completes. Exits 0 if completed
-      or not found, 124 on timeout. Defaults to HEAD.
+      Poll until a named check run completes. Exits 0 if completed,
+      124 on timeout (including if never found). Defaults to HEAD.
 
 PR read commands:
   threads [pr-number] [--all]   Review threads (unresolved+non-outdated by default).
