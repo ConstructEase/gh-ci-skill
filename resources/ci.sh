@@ -229,9 +229,10 @@ case "$cmd" in
         '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]')
       count=$(echo "$result" | jq 'length')
       if [ "$count" -eq 0 ]; then
-        echo "Check run \"$check_name\" not found for ref $ref" >&2
-        echo '[]'
-        exit 0
+        attempt=$((attempt + 1))
+        echo "[$attempt/$max] check \"$check_name\" not found yet — waiting ${interval}s" >&2
+        sleep "$interval"
+        continue
       fi
       status=$(echo "$result" | jq -r '.[0].status')
       if [ "$status" = "completed" ]; then
