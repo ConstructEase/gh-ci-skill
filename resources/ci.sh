@@ -163,6 +163,88 @@ case "$cmd" in
     gh run view --job "$1" --log-failed
     ;;
 
+  check-runs)
+    # List check runs for a commit ref (SHA, branch, or tag).
+    # Usage: ci.sh check-runs [ref] [--name <name>] [--limit N]
+    _resolve_repo
+    ref=""
+    if [ $# -gt 0 ] && [ "${1:0:2}" != "--" ]; then
+      ref="$1"; shift
+    fi
+    if [ -z "$ref" ]; then
+      ref="$(git rev-parse HEAD)"
+    fi
+    name=""
+    limit=20
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --name)  name="$2"; shift 2 ;;
+        --limit) limit="$2"; shift 2 ;;
+        *) echo "unknown flag: $1" >&2; exit 1 ;;
+      esac
+    done
+    json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=$limit")
+    if [ -n "$name" ]; then
+      echo "$json" | jq --arg name "$name" \
+        '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]'
+    else
+      echo "$json" | jq \
+        '[.check_runs[] | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]'
+    fi
+    ;;
+
+  check-wait)
+    # Poll until a named check run completes. Prints the final JSON on stdout
+    # and progress lines to stderr. Exits 0 if completed or not found, 124 on timeout.
+    # Usage: ci.sh check-wait <name> [ref] [--interval 30] [--max 10]
+    if [ $# -eq 0 ]; then
+      echo "Usage: ci.sh check-wait <name> [ref] [--interval 30] [--max 10]" >&2
+      exit 1
+    fi
+    _resolve_repo
+    check_name="$1"; shift
+    ref=""
+    if [ $# -gt 0 ] && [ "${1:0:2}" != "--" ]; then
+      ref="$1"; shift
+    fi
+    if [ -z "$ref" ]; then
+      ref="$(git rev-parse HEAD)"
+    fi
+    interval=30
+    max=10
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --interval) interval="$2"; shift 2 ;;
+        --max)      max="$2"; shift 2 ;;
+        *) echo "unknown flag: $1" >&2; exit 1 ;;
+      esac
+    done
+    status=""
+    attempt=0
+    while [ "$attempt" -lt "$max" ]; do
+      json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs")
+      result=$(echo "$json" | jq --arg name "$check_name" \
+        '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]')
+      count=$(echo "$result" | jq 'length')
+      if [ "$count" -eq 0 ]; then
+        echo "Check run \"$check_name\" not found for ref $ref" >&2
+        echo '[]'
+        exit 0
+      fi
+      status=$(echo "$result" | jq -r '.[0].status')
+      if [ "$status" = "completed" ]; then
+        echo "$result"
+        exit 0
+      fi
+      attempt=$((attempt + 1))
+      echo "[$attempt/$max] check \"$check_name\" status=$status — waiting ${interval}s" >&2
+      sleep "$interval"
+    done
+    echo "Timeout after $((interval * max))s — check \"$check_name\" status=$status" >&2
+    echo "$result"
+    exit 124
+    ;;
+
   threads)
     # Unresolved, non-outdated review threads as JSON.
     # Pass --all to include resolved/outdated threads too.
@@ -342,6 +424,14 @@ CI run commands:
       Defaults to latest run on the current branch.
   failed-job-logs <job-id>
       Logs for failed steps in a single job.
+
+Check run commands:
+  check-runs [ref] [--name <name>] [--limit N]
+      List check runs for a commit ref (SHA, branch, or tag).
+      Defaults to HEAD. Filter by name with --name.
+  check-wait <name> [ref] [--interval 30] [--max 10]
+      Poll until a named check run completes. Exits 0 if completed
+      or not found, 124 on timeout. Defaults to HEAD.
 
 PR read commands:
   threads [pr-number] [--all]   Review threads (unresolved+non-outdated by default).

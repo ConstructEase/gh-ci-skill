@@ -3,7 +3,7 @@ name: gh-ci
 description: GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
-  version: "1.0.1"
+  version: "1.1.0"
 ---
 
 # GitHub CI & PR Helper
@@ -40,6 +40,13 @@ CI="~/.claude/skills/gh-ci/resources/ci.sh"
 | `ci.sh wait [run-id] [--interval 30] [--max 60]` | Poll until run completes (exit 124 on timeout) |
 | `ci.sh failed-logs [run-id]` | Logs for failed steps (defaults to latest run) |
 | `ci.sh failed-job-logs <job-id>` | Logs for a specific failed job |
+
+### Check Run Commands
+
+| Command | Description |
+|---|---|
+| `ci.sh check-runs [ref] [--name <name>] [--limit N]` | List check runs for a commit ref (SHA, branch, or tag) |
+| `ci.sh check-wait <name> [ref] [--interval 30] [--max 10]` | Poll until a named check run completes (exit 124 on timeout) |
 
 ### PR Read Commands
 
@@ -79,6 +86,19 @@ bash $CI wait
 
 # If it failed, get the logs
 bash $CI failed-logs
+```
+
+### Poll a check run (e.g. third-party review bot)
+
+```bash
+# List all check runs for the current HEAD
+bash $CI check-runs
+
+# Filter to a specific check by name
+bash $CI check-runs --name "Seer Code Review"
+
+# Wait for a specific check to complete (max ~5 min)
+bash $CI check-wait "Seer Code Review"
 ```
 
 ### Review PR feedback
