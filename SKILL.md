@@ -1,5 +1,5 @@
 ---
-name: gh-ci-helper
+name: gh-ci-skill
 description: GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
@@ -19,14 +19,14 @@ A shell script that wraps the `gh` CLI and GitHub GraphQL API into short, compos
 
 Resolve the path to `ci.sh` based on the environment:
 
-- **Claude Code (terminal):** `~/.claude/skills/gh-ci-helper/resources/ci.sh`
-- **claude.ai (sandbox):** `/mnt/skills/user/gh-ci-helper/resources/ci.sh`
+- **Claude Code (terminal):** `~/.claude/skills/gh-ci-skill/resources/ci.sh`
+- **claude.ai (sandbox):** `/mnt/skills/user/gh-ci-skill/resources/ci.sh`
 - **Codex (sandbox):** `$skill_dir/resources/ci.sh`
 
 Store the resolved path in a variable for reuse:
 
 ```bash
-CI="~/.claude/skills/gh-ci-helper/resources/ci.sh"
+CI="~/.claude/skills/gh-ci-skill/resources/ci.sh"
 ```
 
 ## Available Commands
