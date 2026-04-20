@@ -1,4 +1,4 @@
-# gh-ci-helper
+# gh-ci
 
 An [agent skill](https://github.com/vercel-labs/skills) that wraps the GitHub CLI and GraphQL API into short, composable commands for CI monitoring and PR review.
 
