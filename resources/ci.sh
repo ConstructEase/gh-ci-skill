@@ -127,7 +127,8 @@ case "$cmd" in
         *) echo "unknown flag: $1" >&2; exit 1 ;;
       esac
     done
-    status=""
+    status="not_started"
+    result=""
     attempt=0
     while [ "$attempt" -lt "$max" ]; do
       result=$(gh run view "$run_id" --json status,conclusion,name,displayTitle,url)
@@ -219,7 +220,8 @@ case "$cmd" in
         *) echo "unknown flag: $1" >&2; exit 1 ;;
       esac
     done
-    status=""
+    status="not_started"
+    result=""
     attempt=0
     while [ "$attempt" -lt "$max" ]; do
       json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs")
