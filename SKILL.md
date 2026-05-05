@@ -26,7 +26,7 @@ Resolve the path to `ci.sh` based on the environment:
 Store the resolved path in a variable for reuse:
 
 ```bash
-CI=".claude/skills/gh-ci/resources/ci.sh"
+CI="$(git rev-parse --show-toplevel)/.claude/skills/gh-ci/resources/ci.sh"
 ```
 
 ## Available Commands
