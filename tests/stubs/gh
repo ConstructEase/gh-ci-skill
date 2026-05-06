@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Stub gh CLI — handles only the invocations exercised by the test suite.
+set -euo pipefail
+
+case "${1:-} ${2:-}" in
+  "run list")
+    cat <<'JSON'
+[
+  {
+    "databaseId": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "name": "CI",
+    "workflowName": "CI",
+    "headSha": "abc123",
+    "event": "push",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "url": "https://github.com/owner/repo/actions/runs/1"
+  },
+  {
+    "databaseId": 2,
+    "status": "completed",
+    "conclusion": "failure",
+    "name": "CI",
+    "workflowName": "CI",
+    "headSha": "def456",
+    "event": "push",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "url": "https://github.com/owner/repo/actions/runs/2"
+  }
+]
+JSON
+    ;;
+  "run view")
+    echo '{"status":"completed","conclusion":"success","name":"CI","displayTitle":"test commit","url":"https://github.com/owner/repo/actions/runs/42"}'
+    ;;
+  "repo view")
+    echo '{"nameWithOwner":"owner/repo"}'
+    ;;
+  *)
+    printf 'stub gh: unhandled args: %s\n' "$*" >&2
+    exit 1
+    ;;
+esac
