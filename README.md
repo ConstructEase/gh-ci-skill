@@ -44,6 +44,17 @@ PR write commands:
   unresolve <thread-node-id>
 ```
 
+## Development
+
+Tests use [bats-core](https://github.com/bats-core/bats-core):
+
+```bash
+brew install bats-core
+bats tests/
+```
+
+Note: `npx skills add` currently copies all files in the skill repo, so `tests/` and `.github/` will be included in installs. A `.skillsignore` file is present for when [upstream support lands](https://github.com/vercel-labs/skills/issues/572).
+
 ## License
 
 MIT
