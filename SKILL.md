@@ -3,7 +3,7 @@ name: gh-ci
 description: GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
-  version: "1.1.3"
+  version: "1.1.4"
 ---
 
 # GitHub CI & PR Helper
@@ -17,22 +17,29 @@ A shell script that wraps the `gh` CLI and GitHub GraphQL API into short, compos
 
 ## Script Location
 
-Resolve the path to `ci.sh` based on the environment:
-
-- **Claude Code (terminal):** `.agents/skills/gh-ci/resources/ci.sh` (preferred), or `.claude/skills/gh-ci/resources/ci.sh` (fallback)
-- **claude.ai (sandbox):** `/mnt/skills/user/gh-ci/resources/ci.sh`
-- **Codex (sandbox):** `$skill_dir/resources/ci.sh`
-
-Store the resolved path in a variable for reuse:
+Probe candidate locations in priority order and use the first one found:
 
 ```bash
-ROOT="$(git rev-parse --show-toplevel)"
-if [ -f "$ROOT/.agents/skills/gh-ci/resources/ci.sh" ]; then
-  CI="$ROOT/.agents/skills/gh-ci/resources/ci.sh"
-else
-  CI="$ROOT/.claude/skills/gh-ci/resources/ci.sh"
-fi
+_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+CI=""
+for _d in \
+  "${skill_dir:-}" \
+  "/mnt/skills/user/gh-ci" \
+  "${_root:+$_root/.agents/skills/gh-ci}" \
+  "${_root:+$_root/.claude/skills/gh-ci}" \
+  "$HOME/.agents/skills/gh-ci" \
+  "$HOME/.claude/skills/gh-ci"; do
+  [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && CI="$_d/resources/ci.sh" && break
+done
+unset _root _d
 ```
+
+Priority rationale:
+1. `$skill_dir` — runtime-injected path (Codex, Gemini CLI)
+2. `/mnt/skills/user/gh-ci` — claude.ai sandbox mount
+3. Project-local `.agents/` — Agent Protocol standard (Cursor, Codex, Gemini CLI)
+4. Project-local `.claude/` — Claude Code project install
+5. Global `~/.agents/` and `~/.claude/` — user-wide installs
 
 ## Available Commands
 
