@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Stub git — handles only the invocations exercised by the test suite.
+set -euo pipefail
+
+case "${1:-} ${2:-}" in
+  "branch --show-current")
+    echo "main"
+    ;;
+  "rev-parse HEAD")
+    echo "abc123"
+    ;;
+  "rev-parse --show-toplevel")
+    echo "/tmp/test-repo"
+    ;;
+  *)
+    printf 'stub git: unhandled args: %s\n' "$*" >&2
+    exit 1
+    ;;
+esac
