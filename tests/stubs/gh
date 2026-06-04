@@ -38,19 +38,35 @@ JSON
     echo '{"nameWithOwner":"owner/repo"}'
     ;;
   "api"*)
-    # Route on the path in $2
+    # Route on the path in $2 to get fixture JSON
+    _json=""
     case "${2:-}" in
       repos/*/pulls/comments/*)
-        echo '{"id":3356824857,"user":{"login":"alice"},"body":"Looks good","path":"src/foo.ts","line":42,"diff_hunk":"@@ -1 +1 @@","created_at":"2024-01-01T00:00:00Z","html_url":"https://github.com/owner/repo/pull/1#discussion_r3356824857"}'
+        _json='{"id":3356824857,"user":{"login":"alice"},"body":"Looks good","path":"src/foo.ts","line":42,"diff_hunk":"@@ -1 +1 @@","created_at":"2024-01-01T00:00:00Z","html_url":"https://github.com/owner/repo/pull/1#discussion_r3356824857"}'
         ;;
       repos/*/issues/comments/*)
-        echo '{"id":2345678,"user":{"login":"bob"},"body":"LGTM","created_at":"2024-01-01T00:00:00Z","html_url":"https://github.com/owner/repo/pull/1#issuecomment-2345678"}'
+        _json='{"id":2345678,"user":{"login":"bob"},"body":"LGTM","created_at":"2024-01-01T00:00:00Z","html_url":"https://github.com/owner/repo/pull/1#issuecomment-2345678"}'
         ;;
       *)
         printf 'stub gh: unhandled api path: %s\n' "${2:-}" >&2
         exit 1
         ;;
     esac
+    # Apply --jq filter if present, mirroring real gh behaviour
+    shift 2
+    _jq_filter=""
+    while [ $# -gt 0 ]; do
+      if [ "$1" = "--jq" ] && [ -n "${2:-}" ]; then
+        _jq_filter="$2"; shift 2
+      else
+        shift
+      fi
+    done
+    if [ -n "$_jq_filter" ]; then
+      printf '%s\n' "$_json" | jq "$_jq_filter"
+    else
+      printf '%s\n' "$_json"
+    fi
     ;;
   *)
     printf 'stub gh: unhandled args: %s\n' "$*" >&2

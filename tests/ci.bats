@@ -107,16 +107,19 @@ setup() {
   [[ "$output" == *"Unrecognised comment URL"* ]]
 }
 
-@test "get-comment discussion_r URL returns review comment body" {
+@test "get-comment discussion_r URL returns jq-filtered review comment" {
   run bash "$CI_SH" get-comment \
     "https://github.com/owner/repo/pull/1#discussion_r3356824857"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Looks good"* ]]
+  # jq filter extracts .user.login — raw {"login":"alice"} must not appear
+  [[ "$output" != *'"login"'* ]]
 }
 
-@test "get-comment issuecomment URL returns issue comment body" {
+@test "get-comment issuecomment URL returns jq-filtered issue comment" {
   run bash "$CI_SH" get-comment \
     "https://github.com/owner/repo/pull/1#issuecomment-2345678"
   [ "$status" -eq 0 ]
   [[ "$output" == *"LGTM"* ]]
+  [[ "$output" != *'"login"'* ]]
 }
