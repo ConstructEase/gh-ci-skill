@@ -123,3 +123,11 @@ setup() {
   [[ "$output" == *"LGTM"* ]]
   [[ "$output" != *'"login"'* ]]
 }
+
+@test "get-comment changes-tab r<id> URL returns review comment body" {
+  run bash "$CI_SH" get-comment \
+    "https://github.com/owner/repo/pull/1/changes#r3356824857"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Looks good"* ]]
+  [[ "$output" != *'"login"'* ]]
+}

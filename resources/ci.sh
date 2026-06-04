@@ -333,8 +333,8 @@ query($owner: String!, $repo: String!, $number: Int!) {
     owner_from_url="${path%%/*}"
     rest="${path#*/}"
     repo_from_url="${rest%%/*}"
-    if [[ "$fragment" =~ ^discussion_r([0-9]+)$ ]]; then
-      comment_id="${BASH_REMATCH[1]}"
+    if [[ "$fragment" =~ ^(discussion_r|r)([0-9]+)$ ]]; then
+      comment_id="${BASH_REMATCH[2]}"
       gh api "repos/$owner_from_url/$repo_from_url/pulls/comments/$comment_id" \
         --jq '{id, user: .user.login, body, path: .path, line, diff_hunk, created_at, html_url}'
     elif [[ "$fragment" =~ ^issuecomment-([0-9]+)$ ]]; then
@@ -343,7 +343,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
         --jq '{id, user: .user.login, body, created_at, html_url}'
     else
       echo "Unrecognised comment URL: #$fragment" >&2
-      echo "Expected #discussion_r<id> or #issuecomment-<id>" >&2
+      echo "Expected #discussion_r<id>, #r<id>, or #issuecomment-<id>" >&2
       exit 1
     fi
     ;;
