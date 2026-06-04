@@ -316,6 +316,38 @@ query($owner: String!, $repo: String!, $number: Int!) {
       --jq '[.[] | {id, user: .user.login, body, created_at}]'
     ;;
 
+  get-comment)
+    # Fetch a single comment by its GitHub URL.
+    # Supports inline review comments (#discussion_r<id>) and
+    # top-level issue comments (#issuecomment-<id>).
+    # Usage: ci.sh get-comment <github-comment-url>
+    if [ $# -eq 0 ]; then
+      echo "Usage: ci.sh get-comment <github-comment-url>" >&2
+      echo "  e.g. https://github.com/owner/repo/pull/1#discussion_r123" >&2
+      exit 1
+    fi
+    url="$1"
+    fragment="${url##*#}"
+    path="${url#https://github.com/}"
+    path="${path%%#*}"
+    owner_from_url="${path%%/*}"
+    rest="${path#*/}"
+    repo_from_url="${rest%%/*}"
+    if [[ "$fragment" =~ ^discussion_r([0-9]+)$ ]]; then
+      comment_id="${BASH_REMATCH[1]}"
+      gh api "repos/$owner_from_url/$repo_from_url/pulls/comments/$comment_id" \
+        --jq '{id, user: .user.login, body, path: .path, line, diff_hunk, created_at, html_url}'
+    elif [[ "$fragment" =~ ^issuecomment-([0-9]+)$ ]]; then
+      comment_id="${BASH_REMATCH[1]}"
+      gh api "repos/$owner_from_url/$repo_from_url/issues/comments/$comment_id" \
+        --jq '{id, user: .user.login, body, created_at, html_url}'
+    else
+      echo "Unrecognised comment URL: #$fragment" >&2
+      echo "Expected #discussion_r<id> or #issuecomment-<id>" >&2
+      exit 1
+    fi
+    ;;
+
   review-status)
     # Review decision + per-reviewer state.
     # Usage: ci.sh review-status [pr-number]
@@ -439,6 +471,7 @@ Check run commands:
 PR read commands:
   threads [pr-number] [--all]   Review threads (unresolved+non-outdated by default).
   comments [pr-number]          Top-level PR conversation comments.
+  get-comment <url>             Fetch a single comment by its GitHub URL.
   review-status [pr-number]     Review decision + per-reviewer state.
   pr [pr-number]                PR summary (number, url, headRefName, headRefOid, state).
 

@@ -66,6 +66,7 @@ Priority rationale:
 |---|---|
 | `ci.sh threads [pr-number] [--all]` | Unresolved review threads (JSON) |
 | `ci.sh comments [pr-number]` | Top-level PR conversation comments |
+| `ci.sh get-comment <url>` | Fetch a single comment by its GitHub URL |
 | `ci.sh review-status [pr-number]` | Review decision + per-reviewer state |
 | `ci.sh pr [pr-number]` | PR summary (number, url, branch, state) |
 
@@ -118,6 +119,9 @@ bash $CI check-wait "Seer Code Review"
 ```bash
 # See unresolved review threads
 bash $CI threads
+
+# Fetch a specific comment by its GitHub URL (inline or top-level)
+bash $CI get-comment "https://github.com/owner/repo/pull/123#discussion_r3356824857"
 
 # Reply to a review comment (use databaseId from threads output)
 bash $CI reply 123 456789 "Fixed in the latest commit"

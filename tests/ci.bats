@@ -90,3 +90,33 @@ setup() {
   [[ "$output" == *"abc123"* ]]
   [[ "$output" == *"def456"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# get-comment
+# ---------------------------------------------------------------------------
+
+@test "get-comment with no args exits 1" {
+  run bash "$CI_SH" get-comment
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Usage: ci.sh get-comment"* ]]
+}
+
+@test "get-comment with unrecognised fragment exits 1" {
+  run bash -c "bash \"$CI_SH\" get-comment 'https://github.com/owner/repo/pull/1#unknown-99' 2>&1"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Unrecognised comment URL"* ]]
+}
+
+@test "get-comment discussion_r URL returns review comment body" {
+  run bash "$CI_SH" get-comment \
+    "https://github.com/owner/repo/pull/1#discussion_r3356824857"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Looks good"* ]]
+}
+
+@test "get-comment issuecomment URL returns issue comment body" {
+  run bash "$CI_SH" get-comment \
+    "https://github.com/owner/repo/pull/1#issuecomment-2345678"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"LGTM"* ]]
+}
