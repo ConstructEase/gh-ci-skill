@@ -1,0 +1,29 @@
+name: Version Check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version is bumped
+        run: |
+          pr_version=$(grep '^  version:' SKILL.md | sed 's/.*"\(.*\)"/\1/')
+          main_version=$(git show origin/main:SKILL.md | grep '^  version:' | sed 's/.*"\(.*\)"/\1/')
+
+          echo "main:    $main_version"
+          echo "PR:      $pr_version"
+
+          # Compare using sort -V (version sort)
+          lower=$(printf '%s\n%s' "$pr_version" "$main_version" | sort -V | head -1)
+          if [ "$lower" != "$main_version" ] || [ "$pr_version" = "$main_version" ]; then
+            echo "❌ PR version ($pr_version) must be greater than main ($main_version)"
+            exit 1
+          fi
+          echo "✅ Version bump verified ($main_version → $pr_version)"
