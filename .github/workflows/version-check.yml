@@ -14,8 +14,9 @@ jobs:
 
       - name: Check version is bumped
         run: |
-          pr_version=$(grep '^  version:' SKILL.md | sed 's/.*"\(.*\)"/\1/')
-          main_version=$(git show origin/main:SKILL.md | grep '^  version:' | sed 's/.*"\(.*\)"/\1/')
+          pr_version=$(grep '^  version:' gh-ci/SKILL.md | sed 's/.*"\(.*\)"/\1/')
+          main_version=$(git show origin/main:SKILL.md 2>/dev/null || git show origin/main:gh-ci/SKILL.md)
+          main_version=$(echo "$main_version" | grep '^  version:' | sed 's/.*"\(.*\)"/\1/')
 
           echo "main:    $main_version"
           echo "PR:      $pr_version"
