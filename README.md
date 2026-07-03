@@ -53,7 +53,7 @@ brew install bats-core
 bats tests/
 ```
 
-Note: `npx skills add` currently copies all files in the skill repo, so `tests/` and `.github/` will be included in installs. A `.skillsignore` file is present for when [upstream support lands](https://github.com/vercel-labs/skills/issues/572).
+Note: the skill lives in the `gh-ci/` subdirectory (`gh-ci/SKILL.md` + `gh-ci/resources/ci.sh`). The skills CLI treats a directory containing a SKILL.md as the skill and copies that directory on install. Keeping the skill out of the repo root matters: current `npx skills` versions install a root-level SKILL.md as a single file and drop everything else, which would break `ci.sh` on `npx skills update`. Repo-level files (`tests/`, `.github/`, `README.md`, `LICENSE`) stay outside the skill directory and are never installed.
 
 ## License
 

@@ -5,7 +5,7 @@ setup() {
   export PATH="$BATS_TEST_DIRNAME/stubs:$PATH"
   # Provide repo context so _resolve_repo never calls gh
   export REPO_NWO="owner/repo"
-  CI_SH="$BATS_TEST_DIRNAME/../resources/ci.sh"
+  CI_SH="$BATS_TEST_DIRNAME/../gh-ci/resources/ci.sh"
 }
 
 # ---------------------------------------------------------------------------
