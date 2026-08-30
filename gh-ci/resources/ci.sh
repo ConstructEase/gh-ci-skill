@@ -66,7 +66,11 @@ _read_body() {
     fi
     cat "$2"
   elif [ -n "${1:-}" ]; then
-    printf '%s' "$1"
+    # Join all remaining args with single spaces so an unquoted multi-word body
+    # survives. IFS is pinned locally so the separator is a space regardless of
+    # ambient shell state.
+    local IFS=' '
+    printf '%s' "$*"
   else
     cat
   fi
@@ -221,10 +225,16 @@ case "$cmd" in
       esac
     done
     status="not_started"
-    result=""
+    # Seeded to a valid empty JSON array so every exit path (including --max 0,
+    # where the loop body never runs) emits parseable JSON on stdout.
+    result="[]"
     attempt=0
     while [ "$attempt" -lt "$max" ]; do
-      json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs")
+      # per_page=100 is the API maximum; check-wait has no user-facing limit flag.
+      # A commit with more than 100 check runs would still need pagination, which
+      # is deliberately not added here: gh api --paginate concatenates JSON
+      # documents and would break the single-document jq filter below.
+      json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=100")
       result=$(echo "$json" | jq --arg name "$check_name" \
         '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]')
       count=$(echo "$result" | jq 'length')
