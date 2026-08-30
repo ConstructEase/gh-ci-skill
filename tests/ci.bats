@@ -131,3 +131,52 @@ setup() {
   [[ "$output" == *"Looks good"* ]]
   [[ "$output" != *'"login"'* ]]
 }
+
+# ---------------------------------------------------------------------------
+# regression: check-wait pagination and stdout validity
+# ---------------------------------------------------------------------------
+
+@test "check-wait requests per_page on its check-runs call" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-wait "Deploy" abc123 --max 1 --interval 0
+  [ "$status" -eq 124 ]
+  run grep -c 'repos/owner/repo/commits/abc123/check-runs?per_page=100' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-wait --max 0 exits 124 and prints an empty JSON array" {
+  # stderr discarded so $output is stdout alone
+  run bash -c "bash \"$CI_SH\" check-wait Deploy abc123 --max 0 2>/dev/null"
+  [ "$status" -eq 124 ]
+  # stdout must be parseable JSON, not the bare newline of an uninitialised var
+  echo "$output" | jq -e . >/dev/null
+  [ "$(echo "$output" | jq -c .)" = "[]" ]
+}
+
+# ---------------------------------------------------------------------------
+# regression: multi-word comment bodies
+# ---------------------------------------------------------------------------
+
+@test "comment passes an unquoted multi-word body through in full" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" comment 123 hello world from firstmate
+  [ "$status" -eq 0 ]
+  run grep -Fx 'body=hello world from firstmate' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "reply passes an unquoted multi-word body through in full" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" reply 123 456 hello world from firstmate
+  [ "$status" -eq 0 ]
+  run grep -Fx 'body=hello world from firstmate' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "comment with a single quoted body is unchanged" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" comment 123 "one body"
+  [ "$status" -eq 0 ]
+  run grep -Fx 'body=one body' "$log"
+  [ "$status" -eq 0 ]
+}
