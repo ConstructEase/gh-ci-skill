@@ -57,7 +57,7 @@ _resolve_run() {
   fi
 }
 
-# Read a comment body from either $1, --file <path>, or stdin.
+# Read a comment body from the positional args, --file <path>, or stdin.
 # Usage: body=$(_read_body "$@")
 _read_body() {
   if [ "${1:-}" = "--file" ]; then
