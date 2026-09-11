@@ -112,9 +112,9 @@ the real per-session cost driver.
 | | `gh` | 100% (5/5) | 68,899 (68,885–68,899) | 60,352 | 8,543 | 4 | 485 | 7.1 | 2 |
 | | gh-axi | 100% (5/5) | 75,199 (75,179–75,221) | 63,493 | 11,702 | 4 | 486 | 7.9 | 2 |
 
-Every condition passed all 25 read runs. On every task, gh-ci used roughly 2–3×
-the total input tokens and API calls of `gh` or gh-axi; cross-task medians are not
-reported because task workloads differ.
+Every condition passed all 25 read runs. On every task, gh-ci used between about
+1.5× and 3.6× the total input tokens and between 1.5× and 3.5× the API calls of
+`gh` or gh-axi; cross-task medians are not reported because task workloads differ.
 
 All 75 runs exited 0 and all 75 were judged PASS. On correctness the read-only half
 is a wash; the spread is entirely in turns, tokens, and wall clock.
