@@ -205,6 +205,25 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "check-runs also resolves a PR number after a 404 literal response" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-runs 125
+  [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/125/check-runs' "$log"
+  [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/deadbeef125456/check-runs' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-runs preserves unrelated 422 failures" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-runs 126
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Validation Failed (HTTP 422)"* ]]
+  run grep -c 'repos/owner/repo/commits/deadbeef126456/check-runs' "$log"
+  [ "$status" -eq 1 ]
+}
+
 @test "check-runs with a SHA ref is used unchanged" {
   log="$BATS_TEST_TMPDIR/gh-calls"
   GH_STUB_LOG="$log" run bash "$CI_SH" check-runs abc123

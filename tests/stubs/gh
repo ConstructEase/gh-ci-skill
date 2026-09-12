@@ -82,7 +82,15 @@ JSON
     _json=""
     case "${2:-}" in
       repos/*/commits/124/check-runs*)
-        echo "gh: No commit found for SHA: 124 (HTTP 404)" >&2
+        echo "gh: No commit found for SHA: 124 (HTTP 422)" >&2
+        exit 1
+        ;;
+      repos/*/commits/125/check-runs*)
+        echo "gh: Not Found (HTTP 404)" >&2
+        exit 1
+        ;;
+      repos/*/commits/126/check-runs*)
+        echo "gh: Validation Failed (HTTP 422)" >&2
         exit 1
         ;;
       repos/*/commits/999/check-runs*)

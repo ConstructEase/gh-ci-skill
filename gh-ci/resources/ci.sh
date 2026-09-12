@@ -55,7 +55,9 @@ _fetch_check_runs() {
     status=$?
   fi
 
-  if [[ "$ref" =~ ^[0-9]+$ ]] && [[ "$output" == *"(HTTP 404)"* ]]; then
+  if [[ "$ref" =~ ^[0-9]+$ ]] && \
+     { [[ "$output" == *"(HTTP 404)"* ]] ||
+       [[ "$output" == *"No commit found for SHA"*"(HTTP 422)"* ]]; }; then
     local sha
     sha="$(gh pr view "$ref" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
     if [ -n "$sha" ]; then
