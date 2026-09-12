@@ -102,6 +102,9 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
 
     # -- plumbing ----------------------------------------------------------
     def _send(self, code, payload):
+        if getattr(self, "_entry", None) is not None:
+            self._entry["status"] = code
+        self._last_payload = payload
         body = json.dumps(payload).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -160,19 +163,30 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                 "rest_path": self._rest_path(),
                 "query": urllib.parse.urlparse(self.path).query,
                 "body": parsed,
+                "status": None,
             }
+            if path == "/api/graphql":
+                entry["graphql_op"] = _graphql_op(parsed)
+            # The entry is recorded after dispatch so it can carry the response
+            # status. A caller grading the log needs that: an agent's first
+            # attempt at an endpoint may 404, and only the call that actually
+            # succeeded counts as the write it made.
+            self._entry = entry
             try:
                 if path == "/api/graphql":
-                    entry["graphql_op"] = _graphql_op(parsed)
-                    self.state.record(entry)
                     self._graphql(parsed)
+                    if entry.get("status") == 200 and _has_errors(self._last_payload):
+                        entry["graphql_errors"] = True
                 else:
-                    self.state.record(entry)
                     self._rest(method, self._rest_path(), parsed)
             except BrokenPipeError:
+                self.state.record(entry)
                 raise
             except Exception as exc:  # a mock bug must be visible, not silent
                 self._error(500, "mock forge error: %s" % exc)
+            finally:
+                self._entry = None
+            self.state.record(entry)
 
     def _control(self, method, path):
         action = path[len("/__control/"):]
@@ -236,6 +250,29 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                     self._error(422, "Validation Failed: in_reply_to %s is not "
                                      "a comment on this pull request" % reply_to)
                     return
+            comment = _make_review_comment(d, st.alloc_id(), text, thread, reply_to)
+            thread["comments"].append(comment)
+            self._send(201, comment)
+            return
+
+        # POST /repos/{o}/{r}/pulls/{n}/comments/{comment_id}/replies
+        # The dedicated reply endpoint. It is easy to miss that this exists --
+        # it is a real route alongside the in_reply_to form, and an agent that
+        # finds it should not be penalised for the mock not knowing it.
+        m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/pulls/(\d+)/comments/(\d+)/replies", path)
+        if m and method == "POST":
+            if "%s/%s" % (m.group(1), m.group(2)) != nwo:
+                self._error(404, "Not Found")
+                return
+            text = (body or {}).get("body")
+            if not text:
+                self._error(422, "Validation Failed: body is required")
+                return
+            reply_to = int(m.group(4))
+            thread = st.thread_by_comment_db_id(reply_to)
+            if thread is None:
+                self._error(404, "Not Found")
+                return
             comment = _make_review_comment(d, st.alloc_id(), text, thread, reply_to)
             thread["comments"].append(comment)
             self._send(201, comment)
@@ -308,6 +345,12 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         except gql.ParseError as exc:
             self._graphql_errors(None, ["Parse error on GraphQL document: %s" % exc])
             return
+        # The operation NAME is whatever the client called it ("CommentCreate"),
+        # so it is useless for identifying what was done. The top-level FIELDS
+        # are the mutation itself ("addComment"), which is what a grader needs.
+        if getattr(self, "_entry", None) is not None:
+            self._entry["graphql_fields"] = sorted(
+                {f["name"] for f in gql._flatten(selections, fragments)})
         errors = []
         universe = self._universe(errors)
         data = gql.project(selections, universe, fragments, variables)
@@ -444,6 +487,10 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
 
 
 # -- response builders -----------------------------------------------------
+
+def _has_errors(payload):
+    return isinstance(payload, dict) and bool(payload.get("errors"))
+
 
 def _graphql_op(body):
     """A short label for the call log: the operation name, or the first field."""

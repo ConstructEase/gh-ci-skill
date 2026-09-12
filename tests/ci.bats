@@ -458,3 +458,56 @@ first_thread_id() {
   [ "$(echo "$output" | jq '[.[] | select(.rest_path=="/user")] | length')" -eq 1 ]
   forge_stop
 }
+
+@test "forge: the dedicated review-comment replies endpoint works and is logged" {
+  forge_start
+  run gh api "repos/$GH_REPO/pulls/1/comments/3408268489/replies" \
+        -f body="via the replies endpoint"
+  [ "$status" -eq 0 ]
+  run forge_calls
+  call=$(echo "$output" | jq '[.[] | select(.method=="POST" and (.rest_path|test("/comments/3408268489/replies$")))][0]')
+  [ "$(echo "$call" | jq -r '.status')" = "201" ]
+  # and it landed in that thread, not a new one
+  run bash "$CI_SH" threads 1
+  [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
+  [ "$(echo "$output" | jq -r '.threads[0].comments.nodes[-1].body')" = "via the replies endpoint" ]
+  forge_stop
+}
+
+@test "forge: the call log records the response status of every request" {
+  forge_start
+  bash "$CI_SH" comment 1 "ok write" || true
+  bash "$CI_SH" reply 1 999999999 "rejected write" || true
+  run forge_calls
+  # the accepted write and the rejected one are distinguishable in the log,
+  # which is what lets a grader count only the calls GitHub actually took
+  [ "$(echo "$output" | jq -r '[.[] | select(.rest_path|test("/issues/1/comments$"))][0].status')" = "201" ]
+  [ "$(echo "$output" | jq -r '[.[] | select(.rest_path|test("/pulls/1/comments$"))][0].status')" = "422" ]
+  forge_stop
+}
+
+@test "forge: a GraphQL error is flagged in the call log despite the 200" {
+  forge_start
+  bash "$CI_SH" resolve PRRT_kwNOTATHREAD || true
+  run forge_calls
+  [ "$(echo "$output" | jq -r '[.[] | select(.graphql_op=="resolveReviewThread")][0].status')" = "200" ]
+  [ "$(echo "$output" | jq -r '[.[] | select(.graphql_op=="resolveReviewThread")][0].graphql_errors')" = "true" ]
+  forge_stop
+}
+
+@test "forge: the call log records the GraphQL mutation field, not just the operation name" {
+  forge_start
+  tid="$(first_thread_id)"
+  bash "$CI_SH" resolve "$tid"
+  run forge_calls
+  # A client names its operation whatever it likes -- gh sends
+  # `mutation CommentCreate { addComment(...) }` -- so only the selected field
+  # identifies what was actually done.
+  call=$(echo "$output" | jq '[.[] | select(.graphql_fields != null and (.graphql_fields|index("resolveReviewThread")))][0]')
+  [ "$(echo "$call" | jq -r '.status')" = "200" ]
+  run gh api graphql -f query='mutation NamedWhateverILike { addComment(input: {subjectId: "PR_kwDOMOCKF1", body: "hi"}) { commentEdge { node { url } } } }'
+  [ "$status" -eq 0 ]
+  run forge_calls
+  [ "$(echo "$output" | jq '[.[] | select(.graphql_fields != null and (.graphql_fields|index("addComment")))] | length')" -eq 1 ]
+  forge_stop
+}
