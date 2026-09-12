@@ -231,6 +231,10 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         d = st.data
         nwo = "%s/%s" % (d["owner"], d["repo"])
 
+        def unknown_pull(match):
+            return ("%s/%s" % (match.group(1), match.group(2)) != nwo or
+                    int(match.group(3)) != d["pull"]["number"])
+
         if path == "/user":
             self._send(200, d["viewer"])
             return
@@ -243,7 +247,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         # POST /repos/{o}/{r}/pulls/{n}/comments  -- reply (in_reply_to) or new thread
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/pulls/(\d+)/comments", path)
         if m:
-            if "%s/%s" % (m.group(1), m.group(2)) != nwo:
+            if unknown_pull(m):
                 self._error(404, "Not Found")
                 return
             if method == "GET":
@@ -289,7 +293,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         # finds it should not be penalised for the mock not knowing it.
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/pulls/(\d+)/comments/(\d+)/replies", path)
         if m and method == "POST":
-            if "%s/%s" % (m.group(1), m.group(2)) != nwo:
+            if unknown_pull(m):
                 self._error(404, "Not Found")
                 return
             text = (body or {}).get("body")
@@ -309,7 +313,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         # POST /repos/{o}/{r}/issues/{n}/comments -- top-level PR comment
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/issues/(\d+)/comments", path)
         if m:
-            if "%s/%s" % (m.group(1), m.group(2)) != nwo:
+            if unknown_pull(m):
                 self._error(404, "Not Found")
                 return
             if method == "GET":
@@ -383,6 +387,9 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
 
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/pulls/(\d+)", path)
         if m and method == "GET":
+            if unknown_pull(m):
+                self._error(404, "Not Found")
+                return
             self._send(200, _pull_obj(d))
             return
 

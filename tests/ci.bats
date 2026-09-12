@@ -397,6 +397,28 @@ first_thread_id() {
   [[ "$output" == *"in_reply_to"* ]]
 }
 
+@test "forge: reply rejects an unknown PR without changing a thread" {
+  forge_start
+  run gh api "repos/$GH_REPO/pulls/999/comments" \
+        -f body="wrong pull" -F in_reply_to=3408268489
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Not Found"* ]]
+  run bash "$CI_SH" threads 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.threads[0].comments.nodes | length')" -eq 1 ]
+}
+
+@test "forge: dedicated reply rejects an unknown PR without changing a thread" {
+  forge_start
+  run gh api "repos/$GH_REPO/pulls/999/comments/3408268489/replies" \
+        -f body="wrong pull"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Not Found"* ]]
+  run bash "$CI_SH" threads 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.threads[0].comments.nodes | length')" -eq 1 ]
+}
+
 @test "forge: comment POSTs to the issue-comments endpoint, not the review one" {
   forge_start
   run bash "$CI_SH" comment 1 CI is green on this branch
@@ -406,6 +428,16 @@ first_thread_id() {
   # the discrimination an LLM judge reading prose cannot make
   [ "$(echo "$output" | jq '[.[] | select(.method=="POST" and (.rest_path|test("/pulls/1/comments$")))] | length')" -eq 0 ]
   [ "$(echo "$output" | jq -r '[.[] | select(.method=="POST" and (.rest_path|test("/issues/1/comments$")))][0].body.body')" = "CI is green on this branch" ]
+}
+
+@test "forge: comment rejects an unknown PR without writing" {
+  forge_start
+  run gh api "repos/$GH_REPO/issues/999/comments" -f body="wrong pull"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Not Found"* ]]
+  run bash "$CI_SH" comments 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r 'length')" -eq 0 ]
 }
 
 @test "forge: resolve sends the resolveReviewThread mutation and the thread flips" {
