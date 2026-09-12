@@ -1,0 +1,418 @@
+{
+  "owner": "ConstructEase",
+  "repo": "gh-ci-bench-fixture",
+  "repo_node_id": "R_kgDOMOCKF1",
+  "now": "2026-09-11T12:00:00Z",
+  "next_id": 900000000,
+  "viewer": {
+    "login": "calebl",
+    "id": 1001,
+    "node_id": "U_kgDOMOCKU1",
+    "name": "Caleb LeNoir",
+    "type": "User"
+  },
+  "pull": {
+    "number": 1,
+    "node_id": "PR_kwDOMOCKF1",
+    "state": "OPEN",
+    "title": "Add session retry handling",
+    "body": "Adds bounded retry to the session client.",
+    "head_ref": "feat/session-retry",
+    "head_sha": "1312fe2c17bfcf9998a0da81030e051c49ad0a29",
+    "head_path": "src/auth/session.ts",
+    "review_decision": "REVIEW_REQUIRED"
+  },
+  "threads": [
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu00",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408268489,
+          "id": 3408268489,
+          "node_id": "PRRC_kwDOMOCKF86Ja00",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "This retry loop has no upper bound. If the upstream stays down we spin forever.",
+          "path": "src/auth/session.ts",
+          "line": 12,
+          "originalLine": 12,
+          "original_line": 12,
+          "diffHunk": "@@ -9,6 +9,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -9,6 +9,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:00:00Z",
+          "created_at": "2026-09-01T10:00:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408268489"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu01",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408275502,
+          "id": 3408275502,
+          "node_id": "PRRC_kwDOMOCKF86Ja01",
+          "user": {
+            "login": "reviewer-two",
+            "id": 3001
+          },
+          "body": "`session_id` is read before the null check below - swap the two lines.",
+          "path": "src/api/client.ts",
+          "line": 15,
+          "originalLine": 15,
+          "original_line": 15,
+          "diffHunk": "@@ -12,6 +12,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -12,6 +12,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:01:00Z",
+          "created_at": "2026-09-01T10:01:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408275502"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu02",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408282515,
+          "id": 3408282515,
+          "node_id": "PRRC_kwDOMOCKF86Ja02",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "Nit: this duplicates the helper in `util/retry.ts`. Reuse it?",
+          "path": "src/util/retry.ts",
+          "line": 18,
+          "originalLine": 18,
+          "original_line": 18,
+          "diffHunk": "@@ -15,6 +15,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -15,6 +15,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:02:00Z",
+          "created_at": "2026-09-01T10:02:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408282515"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu03",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408289528,
+          "id": 3408289528,
+          "node_id": "PRRC_kwDOMOCKF86Ja03",
+          "user": {
+            "login": "reviewer-two",
+            "id": 3001
+          },
+          "body": "Missing `await` here, so the error never surfaces to the caller.",
+          "path": "src/auth/session.ts",
+          "line": 21,
+          "originalLine": 21,
+          "original_line": 21,
+          "diffHunk": "@@ -18,6 +18,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -18,6 +18,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:03:00Z",
+          "created_at": "2026-09-01T10:03:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408289528"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu04",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408296541,
+          "id": 3408296541,
+          "node_id": "PRRC_kwDOMOCKF86Ja04",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "Hard-coded 30s timeout. Pull it into the config object with the others.",
+          "path": "src/api/client.ts",
+          "line": 24,
+          "originalLine": 24,
+          "original_line": 24,
+          "diffHunk": "@@ -21,6 +21,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -21,6 +21,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:04:00Z",
+          "created_at": "2026-09-01T10:04:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408296541"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu05",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408303554,
+          "id": 3408303554,
+          "node_id": "PRRC_kwDOMOCKF86Ja05",
+          "user": {
+            "login": "reviewer-two",
+            "id": 3001
+          },
+          "body": "This swallows the exception. At minimum log it before returning null.",
+          "path": "src/util/retry.ts",
+          "line": 27,
+          "originalLine": 27,
+          "original_line": 27,
+          "diffHunk": "@@ -24,6 +24,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -24,6 +24,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:05:00Z",
+          "created_at": "2026-09-01T10:05:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408303554"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu06",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408310567,
+          "id": 3408310567,
+          "node_id": "PRRC_kwDOMOCKF86Ja06",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "Off-by-one: the slice drops the last element.",
+          "path": "src/auth/session.ts",
+          "line": 30,
+          "originalLine": 30,
+          "original_line": 30,
+          "diffHunk": "@@ -27,6 +27,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -27,6 +27,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:06:00Z",
+          "created_at": "2026-09-01T10:06:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408310567"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu07",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408317580,
+          "id": 3408317580,
+          "node_id": "PRRC_kwDOMOCKF86Ja07",
+          "user": {
+            "login": "reviewer-two",
+            "id": 3001
+          },
+          "body": "Should this be `>=`? A zero-length batch currently takes the slow path.",
+          "path": "src/api/client.ts",
+          "line": 33,
+          "originalLine": 33,
+          "original_line": 33,
+          "diffHunk": "@@ -30,6 +30,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -30,6 +30,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:07:00Z",
+          "created_at": "2026-09-01T10:07:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408317580"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu08",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408324593,
+          "id": 3408324593,
+          "node_id": "PRRC_kwDOMOCKF86Ja08",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "The cache key omits the tenant id, so two tenants can collide.",
+          "path": "src/util/retry.ts",
+          "line": 36,
+          "originalLine": 36,
+          "original_line": 36,
+          "diffHunk": "@@ -33,6 +33,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -33,6 +33,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:08:00Z",
+          "created_at": "2026-09-01T10:08:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408324593"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu09",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408331606,
+          "id": 3408331606,
+          "node_id": "PRRC_kwDOMOCKF86Ja09",
+          "user": {
+            "login": "reviewer-two",
+            "id": 3001
+          },
+          "body": "Consider extracting this 40-line block into a named function.",
+          "path": "src/auth/session.ts",
+          "line": 39,
+          "originalLine": 39,
+          "original_line": 39,
+          "diffHunk": "@@ -36,6 +36,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -36,6 +36,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:09:00Z",
+          "created_at": "2026-09-01T10:09:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408331606"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu10",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408338619,
+          "id": 3408338619,
+          "node_id": "PRRC_kwDOMOCKF86Ja10",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "`any` here defeats the point of the generic parameter.",
+          "path": "src/api/client.ts",
+          "line": 42,
+          "originalLine": 42,
+          "original_line": 42,
+          "diffHunk": "@@ -39,6 +39,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -39,6 +39,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:10:00Z",
+          "created_at": "2026-09-01T10:10:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408338619"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu11",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408345632,
+          "id": 3408345632,
+          "node_id": "PRRC_kwDOMOCKF86Ja11",
+          "user": {
+            "login": "reviewer-two",
+            "id": 3001
+          },
+          "body": "This comparison is case-sensitive but the header is not.",
+          "path": "src/util/retry.ts",
+          "line": 45,
+          "originalLine": 45,
+          "original_line": 45,
+          "diffHunk": "@@ -42,6 +42,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -42,6 +42,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:11:00Z",
+          "created_at": "2026-09-01T10:11:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408345632"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu12",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408352645,
+          "id": 3408352645,
+          "node_id": "PRRC_kwDOMOCKF86Ja12",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "Doc comment still says the old function name.",
+          "path": "src/auth/session.ts",
+          "line": 48,
+          "originalLine": 48,
+          "original_line": 48,
+          "diffHunk": "@@ -45,6 +45,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -45,6 +45,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:12:00Z",
+          "created_at": "2026-09-01T10:12:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408352645"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu13",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408359658,
+          "id": 3408359658,
+          "node_id": "PRRC_kwDOMOCKF86Ja13",
+          "user": {
+            "login": "reviewer-two",
+            "id": 3001
+          },
+          "body": "No test covers the failure branch introduced above.",
+          "path": "src/api/client.ts",
+          "line": 51,
+          "originalLine": 51,
+          "original_line": 51,
+          "diffHunk": "@@ -48,6 +48,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -48,6 +48,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:13:00Z",
+          "created_at": "2026-09-01T10:13:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408359658"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_kwDOMOCKFx86JVu14",
+      "isResolved": false,
+      "isOutdated": false,
+      "comments": [
+        {
+          "databaseId": 3408366671,
+          "id": 3408366671,
+          "node_id": "PRRC_kwDOMOCKF86Ja14",
+          "user": {
+            "login": "reviewer-one",
+            "id": 3000
+          },
+          "body": "Reads the env var on every call; hoist it to module scope.",
+          "path": "src/util/retry.ts",
+          "line": 54,
+          "originalLine": 54,
+          "original_line": 54,
+          "diffHunk": "@@ -51,6 +51,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "diff_hunk": "@@ -51,6 +51,8 @@\n-  const old = 1;\n+  const next = 2;",
+          "createdAt": "2026-09-01T10:14:00Z",
+          "created_at": "2026-09-01T10:14:00Z",
+          "html_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/pull/1#discussion_r3408366671"
+        }
+      ]
+    }
+  ],
+  "issue_comments": []
+}
