@@ -65,6 +65,10 @@ JSON
       exit 1
     fi
     _json="{\"number\":$pr_num,\"url\":\"https://github.com/owner/repo/pull/$pr_num\",\"headRefName\":\"feature-branch\",\"headRefOid\":\"deadbeef${pr_num}456\",\"state\":\"OPEN\",\"mergeable\":\"MERGEABLE\",\"mergeStateStatus\":\"CLEAN\"}"
+    if [ -n "$json_fields" ]; then
+      _json="$(printf '%s\n' "$_json" | jq -c --arg fields "$json_fields" \
+        '($fields | split(",")) as $fields | with_entries(select(.key as $key | $fields | index($key)))')"
+    fi
     if [ -n "$jq_filter" ]; then
       printf '%s\n' "$_json" | jq -r "$jq_filter"
     else
