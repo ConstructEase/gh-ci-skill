@@ -524,3 +524,26 @@ first_thread_id() {
   [ "$b" -gt "$((a + 1))" ]
   forge_stop
 }
+
+@test "forge: a posted comment can be edited and deleted again" {
+  forge_start
+  id=$(bash "$CI_SH" comment 1 "first wording" | jq -r .id)
+  run gh api "repos/$GH_REPO/issues/comments/$id" -X PATCH -f body="second wording"
+  [ "$status" -eq 0 ]
+  [ "$(bash "$CI_SH" comments 1 | jq -r '.[0].body')" = "second wording" ]
+  run gh api "repos/$GH_REPO/issues/comments/$id" -X DELETE
+  [ "$status" -eq 0 ]
+  [ "$(bash "$CI_SH" comments 1 | jq -r 'length')" -eq 0 ]
+  # the delete is in the log as a 204, so a grader can tell the write did not survive
+  run forge_calls
+  [ "$(echo "$output" | jq -r '[.[] | select(.method=="DELETE")][0].status')" = "204" ]
+  forge_stop
+}
+
+@test "forge: deleting a thread's root review comment removes the thread" {
+  forge_start
+  run gh api "repos/$GH_REPO/pulls/comments/3408268489" -X DELETE
+  [ "$status" -eq 0 ]
+  [ "$(bash "$CI_SH" threads 1 | jq -r '.threads | length')" -eq 14 ]
+  forge_stop
+}

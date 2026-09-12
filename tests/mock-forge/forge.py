@@ -128,6 +128,14 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_no_content(self):
+        if getattr(self, "_entry", None) is not None:
+            self._entry["status"] = 204
+        self._last_payload = None
+        self.send_response(204)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def _error(self, code, message):
         self._send(code, {"message": message,
                           "documentation_url": "https://docs.github.com/rest"})
@@ -310,21 +318,59 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             return
 
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/pulls/comments/(\d+)", path)
-        if m and method == "GET":
+        if m:
             for t in d["threads"]:
-                for c in t["comments"]:
-                    if int(c["databaseId"]) == int(m.group(3)):
+                for i, c in enumerate(t["comments"]):
+                    if int(c["databaseId"]) != int(m.group(3)):
+                        continue
+                    if method == "GET":
                         self._send(200, c)
-                        return
+                    elif method == "PATCH":
+                        text = (body or {}).get("body")
+                        if not text:
+                            self._error(422, "Validation Failed: body is required")
+                            return
+                        c["body"] = text
+                        c["updated_at"] = d["now"]
+                        self._send(200, c)
+                    elif method == "DELETE":
+                        # Deleting the root comment deletes the whole thread, as
+                        # on real GitHub.
+                        if i == 0:
+                            d["threads"].remove(t)
+                        else:
+                            t["comments"].pop(i)
+                        self._send_no_content()
+                    else:
+                        self._error(404, "Not Found")
+                    return
             self._error(404, "Not Found")
             return
 
+        # Editing and deleting a comment are real endpoints, and an agent that
+        # notices it posted the wrong thing reaches for them. Leaving them
+        # unrouted makes a recoverable mistake look unrecoverable.
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/issues/comments/(\d+)", path)
-        if m and method == "GET":
-            for c in d["issue_comments"]:
-                if int(c["id"]) == int(m.group(3)):
+        if m:
+            for i, c in enumerate(d["issue_comments"]):
+                if int(c["id"]) != int(m.group(3)):
+                    continue
+                if method == "GET":
                     self._send(200, c)
-                    return
+                elif method == "PATCH":
+                    text = (body or {}).get("body")
+                    if not text:
+                        self._error(422, "Validation Failed: body is required")
+                        return
+                    c["body"] = text
+                    c["updated_at"] = d["now"]
+                    self._send(200, c)
+                elif method == "DELETE":
+                    d["issue_comments"].pop(i)
+                    self._send_no_content()
+                else:
+                    self._error(404, "Not Found")
+                return
             self._error(404, "Not Found")
             return
 
