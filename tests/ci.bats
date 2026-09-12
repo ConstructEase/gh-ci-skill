@@ -459,6 +459,30 @@ first_thread_id() {
   [ "$(echo "$output" | jq -r '.data.resolveReviewThread.thread.isResolved')" = "true" ]
 }
 
+@test "forge: addComment rejects missing and unknown subjects without writing" {
+  forge_start
+  run gh api graphql -f query='mutation { addComment(input: {body: "missing subject"}) { commentEdge { node { url } } } }'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"subjectId"* ]]
+  run gh api graphql -f query='mutation { addComment(input: {subjectId: "PR_kwUNKNOWN", body: "unknown subject"}) { commentEdge { node { url } } } }'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PR_kwUNKNOWN"* ]]
+  run bash "$CI_SH" comments 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r 'length')" -eq 0 ]
+}
+
+@test "forge: review-comment mutation rejects a missing body without replying" {
+  forge_start
+  cid="$(bash "$CI_SH" threads 1 | jq -r '.threads[0].comments.nodes[0].id')"
+  run gh api graphql -f query="mutation { addPullRequestReviewComment(input: {inReplyTo: \"$cid\"}) { comment { body } } }"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"body"* ]]
+  run bash "$CI_SH" threads 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.threads[0].comments.nodes | length')" -eq 1 ]
+}
+
 @test "forge: resolving an unknown thread id returns a GraphQL error" {
   forge_start
   run bash "$CI_SH" resolve PRRT_kwNOTATHREAD

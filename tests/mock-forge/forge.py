@@ -480,7 +480,12 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                               "provided invalid value for body (Expected value "
                               "to not be null)")
                 return None
-            if subject and subject != d["pull"]["node_id"]:
+            if not subject:
+                errors.append("Variable $input of type AddCommentInput! was "
+                              "provided invalid value for subjectId (Expected "
+                              "value to not be null)")
+                return None
+            if subject != d["pull"]["node_id"]:
                 errors.append("Could not resolve to a node with the global id "
                               "of '%s'" % subject)
                 return None
@@ -518,6 +523,10 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             inp = args.get("input") or {}
             text = inp.get("body") or args.get("body")
             reply_to = inp.get("inReplyTo") or args.get("inReplyTo")
+            if not text:
+                errors.append("Variable $input was provided invalid value for "
+                              "body (Expected value to not be null)")
+                return None
             thread = None
             for t in d["threads"]:
                 for c in t["comments"]:
