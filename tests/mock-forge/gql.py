@@ -180,24 +180,17 @@ def _parse_selection_set(cur):
 
 
 def parse_document(text):
-    """-> (operation_type, root_selection_set, fragments)
-
-    If the document holds several operations, the first is used; clients that
-    send more than one also send operationName, which nothing here needs.
-    """
+    """-> (operations, fragments)"""
     fragments = {}
-    root = None
-    operation_type = None
+    operations = []
     cur = _Cursor(text)
     while True:
         ch = cur.peek()
         if ch == "":
             break
         if ch == "{":  # anonymous query
-            sel = _parse_selection_set(cur)
-            if root is None:
-                root = sel
-                operation_type = "query"
+            operations.append({"type": "query", "name": None,
+                               "selections": _parse_selection_set(cur)})
             continue
         word = cur.name()
         if word == "fragment":
@@ -208,8 +201,9 @@ def parse_document(text):
             fragments[fname] = _parse_selection_set(cur)
             continue
         if word in ("query", "mutation", "subscription"):
+            operation_name = None
             if cur.peek() not in ("(", "{"):
-                cur.name()  # operation name
+                operation_name = cur.name()
             if cur.peek() == "(":  # variable definitions
                 depth = 0
                 while True:
@@ -227,15 +221,13 @@ def parse_document(text):
                         continue
                     cur.i += 1
             _skip_directives(cur)
-            sel = _parse_selection_set(cur)
-            if root is None:
-                root = sel
-                operation_type = word
+            operations.append({"type": word, "name": operation_name,
+                               "selections": _parse_selection_set(cur)})
             continue
         raise ParseError("unexpected token %r at offset %d" % (word, cur.i))
-    if root is None:
+    if not operations:
         raise ParseError("document has no operation")
-    return operation_type, root, fragments
+    return operations, fragments
 
 
 def resolve_args(args, variables):

@@ -491,6 +491,30 @@ first_thread_id() {
   [ "$(echo "$output" | jq -r '.data.resolveReviewThread.thread.isResolved')" = "true" ]
 }
 
+@test "forge: operationName selects the matching operation without side effects" {
+  forge_start
+  tid="$(first_thread_id)"
+  query="mutation ResolveFirst { resolveReviewThread(input: {threadId: \"$tid\"}) { thread { isResolved } } } query ReadViewer { viewer { login } }"
+  run gh api graphql -f operationName=ReadViewer -f query="$query"
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.data.viewer.login')" = "calebl" ]
+  run bash "$CI_SH" threads 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
+}
+
+@test "forge: multiple operations without operationName are rejected" {
+  forge_start
+  tid="$(first_thread_id)"
+  query="mutation ResolveFirst { resolveReviewThread(input: {threadId: \"$tid\"}) { thread { isResolved } } } query ReadViewer { viewer { login } }"
+  run gh api graphql -f query="$query"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"provide operation name"* ]]
+  run bash "$CI_SH" threads 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
+}
+
 @test "forge: addComment rejects missing and unknown subjects without writing" {
   forge_start
   run gh api graphql -f query='mutation { addComment(input: {body: "missing subject"}) { commentEdge { node { url } } } }'

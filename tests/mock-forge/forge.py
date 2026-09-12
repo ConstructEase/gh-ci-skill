@@ -414,10 +414,27 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         query = body.get("query") or ""
         variables = body.get("variables") or {}
         try:
-            operation_type, selections, fragments = gql.parse_document(query)
+            operations, fragments = gql.parse_document(query)
         except gql.ParseError as exc:
             self._graphql_errors(None, ["Parse error on GraphQL document: %s" % exc])
             return
+        operation_name = body.get("operationName")
+        if operation_name is None:
+            if len(operations) != 1:
+                self._graphql_errors(None, [
+                    "Must provide operation name if query contains multiple operations"])
+                return
+            operation = operations[0]
+        else:
+            operation = next(
+                (candidate for candidate in operations
+                 if candidate["name"] == operation_name), None)
+            if operation is None:
+                self._graphql_errors(None, [
+                    "Unknown operation named '%s'" % operation_name])
+                return
+        operation_type = operation["type"]
+        selections = operation["selections"]
         # The operation NAME is whatever the client called it ("CommentCreate"),
         # so it is useless for identifying what was done. The top-level FIELDS
         # are the mutation itself ("addComment"), which is what a grader needs.
