@@ -3,7 +3,7 @@
   "repo": "gh-ci-bench-fixture",
   "repo_node_id": "R_kgDOMOCKF1",
   "now": "2026-09-11T12:00:00Z",
-  "next_id": 900000000,
+  "next_id": 3995012347,
   "viewer": {
     "login": "calebl",
     "id": 1001,
@@ -414,5 +414,6 @@
       ]
     }
   ],
-  "issue_comments": []
+  "issue_comments": [],
+  "id_seed": 20260911
 }

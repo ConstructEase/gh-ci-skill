@@ -511,3 +511,16 @@ first_thread_id() {
   [ "$(echo "$output" | jq '[.[] | select(.graphql_fields != null and (.graphql_fields|index("addComment")))] | length')" -eq 1 ]
   forge_stop
 }
+
+@test "forge: allocated comment ids look like real GitHub ids" {
+  forge_start
+  a=$(bash "$CI_SH" comment 1 "first"  | jq -r .id)
+  b=$(bash "$CI_SH" comment 1 "second" | jq -r .id)
+  # 10 digits, like every real GitHub comment id
+  [[ "$a" =~ ^[0-9]{10}$ ]]
+  [[ "$b" =~ ^[0-9]{10}$ ]]
+  # and not consecutive: an id ending in a round run of digits reads as
+  # fabricated to anything grading the agent's reported URL
+  [ "$b" -gt "$((a + 1))" ]
+  forge_stop
+}

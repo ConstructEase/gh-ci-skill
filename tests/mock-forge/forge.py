@@ -62,7 +62,10 @@ class ForgeState:
     def reset(self):
         with open(self.seed_path) as fh:
             self.data = json.load(fh)
-        self.next_id = int(self.data.get("next_id", 900000000))
+        self.next_id = int(self.data.get("next_id", 3995012347))
+        # Deterministic PRNG state, reseeded on every reset so a run stays
+        # reproducible while the ids it hands out still look like real ones.
+        self._id_state = int(self.data.get("id_seed", 20260911))
         self.calls = []
         if self.log_path:
             open(self.log_path, "w").close()
@@ -74,7 +77,17 @@ class ForgeState:
                 fh.write(json.dumps(entry) + "\n")
 
     def alloc_id(self):
-        self.next_id += 1
+        """A new comment id that looks like one GitHub would actually issue.
+
+        This matters more than it sounds. Real GitHub comment ids are 10 digits
+        and far apart; an id like 900000001 reads as obviously synthetic, and
+        anything grading the agent's prose -- an LLM judge, or a person --
+        treats a round id in a returned URL as a sign the agent invented it.
+        Stepping by a varying amount from a realistic base stops the fixture
+        putting words in the agent's mouth.
+        """
+        self._id_state = (self._id_state * 1103515245 + 12345) % 2147483648
+        self.next_id += 1 + self._id_state % 9973
         return self.next_id
 
     # -- lookups -----------------------------------------------------------
@@ -523,7 +536,7 @@ def _make_review_comment(d, new_id, text, thread, reply_to):
         "id": new_id,
         "databaseId": new_id,
         "node_id": "PRRC_kwMOCK%d" % new_id,
-        "pull_request_review_id": new_id + 1,
+        "pull_request_review_id": new_id - 4177,
         "in_reply_to_id": reply_to,
         "user": {"login": d["viewer"]["login"], "id": d["viewer"]["id"]},
         "body": text,
