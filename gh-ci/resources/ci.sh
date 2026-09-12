@@ -59,7 +59,7 @@ _fetch_check_runs() {
      { [[ "$output" == *"(HTTP 404)"* ]] ||
        [[ "$output" == *"No commit found for SHA"*"(HTTP 422)"* ]]; }; then
     local sha
-    sha="$(gh pr view "$ref" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
+    sha="$(gh pr view "$ref" --repo "$OWNER/$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
     if [ -n "$sha" ]; then
       CHECK_RUNS_REF="$sha"
       CHECK_RUNS_JSON="$(gh api "repos/$OWNER/$REPO/commits/$sha/check-runs?per_page=$per_page")"
