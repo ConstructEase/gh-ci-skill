@@ -59,11 +59,12 @@ JSON
         *)      pr_num="$1"; shift ;;
       esac
     done
+    [ -n "$pr_num" ] || pr_num=123
     if [ "$pr_num" = "999" ]; then
       echo "no pull requests found for branch" >&2
       exit 1
     fi
-    _json='{"number":123,"url":"https://github.com/owner/repo/pull/123","headRefName":"feature-branch","headRefOid":"deadbeef123456","state":"OPEN","mergeable":"MERGEABLE","mergeStateStatus":"CLEAN"}'
+    _json="{\"number\":$pr_num,\"url\":\"https://github.com/owner/repo/pull/$pr_num\",\"headRefName\":\"feature-branch\",\"headRefOid\":\"deadbeef${pr_num}456\",\"state\":\"OPEN\",\"mergeable\":\"MERGEABLE\",\"mergeStateStatus\":\"CLEAN\"}"
     if [ -n "$jq_filter" ]; then
       printf '%s\n' "$_json" | jq -r "$jq_filter"
     else
@@ -80,6 +81,14 @@ JSON
     # Route on the path in $2 to get fixture JSON
     _json=""
     case "${2:-}" in
+      repos/*/commits/124/check-runs*)
+        echo "gh: No commit found for SHA: 124 (HTTP 404)" >&2
+        exit 1
+        ;;
+      repos/*/commits/999/check-runs*)
+        echo "gh: No commit found for SHA: 999 (HTTP 404)" >&2
+        exit 1
+        ;;
       repos/*/commits/*/check-runs*)
         _json='{"total_count":0,"check_runs":[]}'
         ;;

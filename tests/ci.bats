@@ -185,19 +185,23 @@ setup() {
 # check-runs / check-wait: PR-number ref resolution
 # ---------------------------------------------------------------------------
 
-@test "check-runs resolves a PR-number ref to its head SHA" {
+@test "check-runs prefers an existing digit-only literal ref over a PR" {
   log="$BATS_TEST_TMPDIR/gh-calls"
   GH_STUB_LOG="$log" run bash "$CI_SH" check-runs 123
   [ "$status" -eq 0 ]
-  run grep -c 'repos/owner/repo/commits/deadbeef123456/check-runs' "$log"
+  run grep -c 'repos/owner/repo/commits/123/check-runs' "$log"
   [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/deadbeef123456/check-runs' "$log"
+  [ "$status" -eq 1 ]
 }
 
-@test "check-runs falls back to a literal ref when the digit-only ref is not a PR" {
+@test "check-runs resolves a PR number after the literal ref is not found" {
   log="$BATS_TEST_TMPDIR/gh-calls"
-  GH_STUB_LOG="$log" run bash "$CI_SH" check-runs 999
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-runs 124
   [ "$status" -eq 0 ]
-  run grep -c 'repos/owner/repo/commits/999/check-runs' "$log"
+  run grep -c 'repos/owner/repo/commits/124/check-runs' "$log"
+  [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/deadbeef124456/check-runs' "$log"
   [ "$status" -eq 0 ]
 }
 
@@ -211,9 +215,11 @@ setup() {
 
 @test "check-wait resolves a PR-number ref to its head SHA" {
   log="$BATS_TEST_TMPDIR/gh-calls"
-  GH_STUB_LOG="$log" run bash "$CI_SH" check-wait "Deploy" 123 --max 1 --interval 0
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-wait "Deploy" 124 --max 1 --interval 0
   [ "$status" -eq 124 ]
-  run grep -c 'repos/owner/repo/commits/deadbeef123456/check-runs' "$log"
+  run grep -c 'repos/owner/repo/commits/124/check-runs' "$log"
+  [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/deadbeef124456/check-runs' "$log"
   [ "$status" -eq 0 ]
 }
 
@@ -238,7 +244,7 @@ setup() {
 }
 
 # ---------------------------------------------------------------------------
-# failed-logs / failed-job-logs: output cap
+# failed-logs: output cap
 # ---------------------------------------------------------------------------
 
 @test "failed-logs under the cap is unchanged" {
@@ -249,23 +255,6 @@ setup() {
 
 @test "failed-logs over the cap truncates and spills to a temp file" {
   GH_STUB_BIG_LOG=1 run bash "$CI_SH" failed-logs 42
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"output truncated"* ]]
-  [[ "$output" == *"Full log:"* ]]
-  tmpfile="$(echo "$output" | grep -oE '/[^[:space:]]*gh-ci-log[^[:space:]]*' | head -1)"
-  [ -n "$tmpfile" ]
-  [ -f "$tmpfile" ]
-  rm -f "$tmpfile"
-}
-
-@test "failed-job-logs under the cap is unchanged" {
-  run bash "$CI_SH" failed-job-logs 99
-  [ "$status" -eq 0 ]
-  [ "$output" = "short log output" ]
-}
-
-@test "failed-job-logs over the cap truncates and spills to a temp file" {
-  GH_STUB_BIG_LOG=1 run bash "$CI_SH" failed-job-logs 99
   [ "$status" -eq 0 ]
   [[ "$output" == *"output truncated"* ]]
   [[ "$output" == *"Full log:"* ]]

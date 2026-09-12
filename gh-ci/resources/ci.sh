@@ -41,22 +41,32 @@ _resolve_pr() {
   fi
 }
 
-# Resolve a ref that may be a PR number to its head commit SHA.
-# Digit-only refs are treated as PR numbers first (looked up via `gh pr view`);
-# if no such PR exists, the literal ref is returned unchanged. This is a
-# heuristic: a short SHA can also be all-digits, but that is rare enough that
-# PR-number resolution takes priority.
-_resolve_ref_to_sha() {
-  local arg="$1"
-  if [[ "$arg" =~ ^[0-9]+$ ]]; then
+_fetch_check_runs() {
+  local ref="$1"
+  local per_page="$2"
+  local output
+  local status
+
+  if output="$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=$per_page" 2>&1)"; then
+    CHECK_RUNS_REF="$ref"
+    CHECK_RUNS_JSON="$output"
+    return
+  else
+    status=$?
+  fi
+
+  if [[ "$ref" =~ ^[0-9]+$ ]] && [[ "$output" == *"(HTTP 404)"* ]]; then
     local sha
-    sha="$(gh pr view "$arg" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
+    sha="$(gh pr view "$ref" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
     if [ -n "$sha" ]; then
-      echo "$sha"
+      CHECK_RUNS_REF="$sha"
+      CHECK_RUNS_JSON="$(gh api "repos/$OWNER/$REPO/commits/$sha/check-runs?per_page=$per_page")"
       return
     fi
   fi
-  echo "$arg"
+
+  printf '%s\n' "$output" >&2
+  return "$status"
 }
 
 # Print $1 (a captured command's output) as-is if it is at or under the cap,
@@ -208,9 +218,7 @@ case "$cmd" in
       echo "Tip: run 'ci.sh status' to see job IDs." >&2
       exit 1
     fi
-    log="$(gh run view --job "$1" --log-failed; printf x)"
-    log="${log%x}"
-    _emit_capped "$log"
+    gh run view --job "$1" --log-failed
     ;;
 
   check-runs)
@@ -219,7 +227,7 @@ case "$cmd" in
     _resolve_repo
     ref=""
     if [ $# -gt 0 ] && [ "${1:0:2}" != "--" ]; then
-      ref="$(_resolve_ref_to_sha "$1")"; shift
+      ref="$1"; shift
     fi
     if [ -z "$ref" ]; then
       ref="$(git rev-parse HEAD)"
@@ -233,7 +241,8 @@ case "$cmd" in
         *) echo "unknown flag: $1" >&2; exit 1 ;;
       esac
     done
-    json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=$limit")
+    _fetch_check_runs "$ref" "$limit"
+    json="$CHECK_RUNS_JSON"
     if [ -n "$name" ]; then
       echo "$json" | jq --arg name "$name" \
         '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]'
@@ -255,7 +264,7 @@ case "$cmd" in
     check_name="$1"; shift
     ref=""
     if [ $# -gt 0 ] && [ "${1:0:2}" != "--" ]; then
-      ref="$(_resolve_ref_to_sha "$1")"; shift
+      ref="$1"; shift
     fi
     if [ -z "$ref" ]; then
       ref="$(git rev-parse HEAD)"
@@ -279,7 +288,9 @@ case "$cmd" in
       # A commit with more than 100 check runs would still need pagination, which
       # is deliberately not added here: gh api --paginate concatenates JSON
       # documents and would break the single-document jq filter below.
-      json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=100")
+      _fetch_check_runs "$ref" 100
+      ref="$CHECK_RUNS_REF"
+      json="$CHECK_RUNS_JSON"
       result=$(echo "$json" | jq --arg name "$check_name" \
         '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]')
       count=$(echo "$result" | jq 'length')
@@ -515,16 +526,20 @@ CI run commands:
       Output over ~20000 chars is truncated, with the full log spilled to a
       temp file and a grep hint printed.
   failed-job-logs <job-id>
-      Logs for failed steps in a single job. Same truncation as failed-logs.
+      Logs for failed steps in a single job.
 
 Check run commands:
   check-runs [ref] [--name <name>] [--limit N]
       List check runs for a commit ref (SHA, branch, tag, or PR number).
       Defaults to HEAD. Filter by name with --name.
+      Digit-only refs are tried literally before falling back to a PR head SHA
+      when the literal ref is not found.
   check-wait <name> [ref] [--interval 30] [--max 10]
       Poll until a named check run completes. Exits 0 if completed,
       124 on timeout (including if never found). Defaults to HEAD.
       ref accepts a SHA, branch, tag, or PR number.
+      Digit-only refs are tried literally before falling back to a PR head SHA
+      when the literal ref is not found.
 
 PR read commands:
   threads [pr-number] [--all]   Review threads (unresolved+non-outdated by default).
