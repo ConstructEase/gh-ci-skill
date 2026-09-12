@@ -19,9 +19,9 @@ port_of() { cat "$dir/forge.port"; }
 
 env_lines() {
   local port; port="$(port_of)"
-  # GH_HOST makes `gh` use GitHub Enterprise paths against the mock; the dummy
-  # GH_TOKEN is the containment backstop -- if a call is ever misrouted to
-  # github.com it fails with "Bad credentials" instead of writing anything.
+  # These exports redirect well-behaved tooling to the mock and make accidental
+  # github.com requests fail authentication. They are not a network sandbox and
+  # a caller can unset them to use stored authentication.
   cat <<ENV
 export GH_HOST=127.0.0.1:$port
 export GH_ENTERPRISE_TOKEN=mock-forge-token

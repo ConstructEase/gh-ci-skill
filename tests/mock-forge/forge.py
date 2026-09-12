@@ -10,6 +10,10 @@ gh-axi, which both shell out to it) talks to it when pointed at it with:
     SSL_CERT_FILE=<the cert this server was started with>
     GH_REPO=<owner>/<repo>
 
+These variables redirect well-behaved tooling and prevent accidental writes;
+they are not a network sandbox against a caller that unsets them and uses
+stored authentication.
+
 Three plumbing facts make that work, and each is load-bearing:
   * `gh` refuses plain HTTP, so this serves TLS with a throwaway self-signed
     cert; `SSL_CERT_FILE` is what makes `gh` trust it.

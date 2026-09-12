@@ -36,8 +36,11 @@ tests/mock-forge/forge.sh stop  /tmp/forge
 `GH_HOST` to the loopback address the mock bound, `GH_ENTERPRISE_TOKEN` to a
 dummy for that host, `SSL_CERT_FILE` to the throwaway cert it just generated,
 and `GH_REPO`/`REPO_NWO` to the seeded repository. It also sets `GH_TOKEN` and
-`GITHUB_TOKEN` to an invalid value on purpose: if a call is ever misrouted to
-`github.com`, it fails with `Bad credentials` instead of writing anything.
+`GITHUB_TOKEN` to an invalid value. For well-behaved tooling that honors these
+exports, calls are redirected to loopback and accidental `github.com` requests
+fail with `Bad credentials`; the call log verifies requests received by the
+mock. This is not a network sandbox: a caller can unset `GH_HOST` and the dummy
+tokens, then use stored authentication to reach real GitHub.
 
 ## The three plumbing facts that make it work
 
