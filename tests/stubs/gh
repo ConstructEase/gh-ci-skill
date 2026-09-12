@@ -32,10 +32,43 @@ case "${1:-} ${2:-}" in
 JSON
     ;;
   "run view")
-    echo '{"status":"completed","conclusion":"success","name":"CI","displayTitle":"test commit","url":"https://github.com/owner/repo/actions/runs/42"}'
+    if [[ " $* " == *" --log-failed "* ]]; then
+      if [ "${GH_STUB_BIG_LOG:-}" = "1" ]; then
+        for i in $(seq 1 1000); do
+          printf 'line %05d: some log output here padding padding\n' "$i"
+        done
+      else
+        printf 'short log output\n'
+      fi
+    else
+      echo '{"status":"completed","conclusion":"success","name":"CI","displayTitle":"test commit","url":"https://github.com/owner/repo/actions/runs/42"}'
+    fi
     ;;
   "repo view")
     echo '{"nameWithOwner":"owner/repo"}'
+    ;;
+  "pr view")
+    shift 2
+    pr_num=""
+    json_fields=""
+    jq_filter=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --json) json_fields="$2"; shift 2 ;;
+        --jq)   jq_filter="$2"; shift 2 ;;
+        *)      pr_num="$1"; shift ;;
+      esac
+    done
+    if [ "$pr_num" = "999" ]; then
+      echo "no pull requests found for branch" >&2
+      exit 1
+    fi
+    _json='{"number":123,"url":"https://github.com/owner/repo/pull/123","headRefName":"feature-branch","headRefOid":"deadbeef123456","state":"OPEN","mergeable":"MERGEABLE","mergeStateStatus":"CLEAN"}'
+    if [ -n "$jq_filter" ]; then
+      printf '%s\n' "$_json" | jq -r "$jq_filter"
+    else
+      printf '%s\n' "$_json"
+    fi
     ;;
   "api"*)
     # Optional call recorder: set GH_STUB_LOG to a writable path and every api

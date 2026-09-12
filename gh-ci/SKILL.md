@@ -3,7 +3,7 @@ name: gh-ci
 description: GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
-  version: "1.2.4"
+  version: "1.3.0"
 ---
 
 # GitHub CI & PR Helper
@@ -17,21 +17,16 @@ A shell script that wraps the `gh` CLI and GitHub GraphQL API into short, compos
 
 ## Script Location
 
-Probe candidate locations in priority order and use the first one found:
+Run this one-liner once per session to set `$CI` to the script path, then invoke every command as `bash "$CI" <subcommand> ...` — no separate discovery step needed:
 
 ```bash
-_root="$(git rev-parse --show-toplevel 2>/dev/null)"
-CI=""
-for _d in \
-  "${skill_dir:-}" \
-  "/mnt/skills/user/gh-ci" \
-  "${_root:+$_root/.agents/skills/gh-ci}" \
-  "${_root:+$_root/.claude/skills/gh-ci}" \
-  "$HOME/.agents/skills/gh-ci" \
-  "$HOME/.claude/skills/gh-ci"; do
-  [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && CI="$_d/resources/ci.sh" && break
-done
-unset _root _d
+CI="$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && echo "$_d/resources/ci.sh" && break; done)"
+```
+
+For example, to check CI status in one step:
+
+```bash
+bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && echo "$_d/resources/ci.sh" && break; done)" status
 ```
 
 Priority rationale:
@@ -50,15 +45,15 @@ Priority rationale:
 | `ci.sh runs [branch] [--sha <sha>] [--limit N]` | List recent CI runs on a branch |
 | `ci.sh status [run-id]` | Status of a run (defaults to latest on current branch) |
 | `ci.sh wait [run-id] [--interval 30] [--max 60]` | Poll until run completes (exit 124 on timeout) |
-| `ci.sh failed-logs [run-id]` | Logs for failed steps (defaults to latest run) |
-| `ci.sh failed-job-logs <job-id>` | Logs for a specific failed job |
+| `ci.sh failed-logs [run-id]` | Logs for failed steps (defaults to latest run); output over ~20000 chars is truncated with the full log spilled to a temp file |
+| `ci.sh failed-job-logs <job-id>` | Logs for a specific failed job (same truncation as `failed-logs`) |
 
 ### Check Run Commands
 
 | Command | Description |
 |---|---|
-| `ci.sh check-runs [ref] [--name <name>] [--limit N]` | List check runs for a commit ref (SHA, branch, or tag) |
-| `ci.sh check-wait <name> [ref] [--interval 30] [--max 10]` | Poll until a named check run completes (exit 124 on timeout) |
+| `ci.sh check-runs [ref] [--name <name>] [--limit N]` | List check runs for a commit ref (SHA, branch, tag, or PR number) |
+| `ci.sh check-wait <name> [ref] [--interval 30] [--max 10]` | Poll until a named check run completes (exit 124 on timeout); `ref` accepts a SHA, branch, tag, or PR number |
 
 ### PR Read Commands
 
@@ -68,7 +63,7 @@ Priority rationale:
 | `ci.sh comments [pr-number]` | Top-level PR conversation comments |
 | `ci.sh get-comment <url>` | Fetch a single comment by its GitHub URL |
 | `ci.sh review-status [pr-number]` | Review decision + per-reviewer state |
-| `ci.sh pr [pr-number]` | PR summary (number, url, branch, state) |
+| `ci.sh pr [pr-number]` | PR summary (number, url, branch, state, mergeable, mergeStateStatus) |
 
 ### PR Write Commands
 
@@ -154,3 +149,4 @@ bash $CI threads | jq '.threads | length'
 - PR number defaults to the open PR for the current branch when omitted.
 - Owner/repo are detected automatically from the git remote.
 - Run ID defaults to the latest run on the current branch when omitted.
+- In `check-runs`/`check-wait`, a digit-only `ref` is tried as a PR number first (resolved to its head SHA); if no such PR exists, it's used as the literal ref (branch/tag/SHA) instead.

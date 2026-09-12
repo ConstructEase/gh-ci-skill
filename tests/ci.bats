@@ -180,3 +180,97 @@ setup() {
   run grep -Fx 'body=one body' "$log"
   [ "$status" -eq 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# check-runs / check-wait: PR-number ref resolution
+# ---------------------------------------------------------------------------
+
+@test "check-runs resolves a PR-number ref to its head SHA" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-runs 123
+  [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/deadbeef123456/check-runs' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-runs falls back to a literal ref when the digit-only ref is not a PR" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-runs 999
+  [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/999/check-runs' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-runs with a SHA ref is used unchanged" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-runs abc123
+  [ "$status" -eq 0 ]
+  run grep -c 'repos/owner/repo/commits/abc123/check-runs' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-wait resolves a PR-number ref to its head SHA" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-wait "Deploy" 123 --max 1 --interval 0
+  [ "$status" -eq 124 ]
+  run grep -c 'repos/owner/repo/commits/deadbeef123456/check-runs' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-wait with a SHA ref is used unchanged" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" check-wait "Deploy" abc123 --max 1 --interval 0
+  [ "$status" -eq 124 ]
+  run grep -c 'repos/owner/repo/commits/abc123/check-runs' "$log"
+  [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# pr: mergeable / mergeStateStatus
+# ---------------------------------------------------------------------------
+
+@test "pr includes mergeable and mergeStateStatus fields" {
+  run bash "$CI_SH" pr 123
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"mergeable"'* ]]
+  [[ "$output" == *'"mergeStateStatus"'* ]]
+  [[ "$output" == *'"headRefOid"'* ]]
+}
+
+# ---------------------------------------------------------------------------
+# failed-logs / failed-job-logs: output cap
+# ---------------------------------------------------------------------------
+
+@test "failed-logs under the cap is unchanged" {
+  run bash "$CI_SH" failed-logs 42
+  [ "$status" -eq 0 ]
+  [ "$output" = "short log output" ]
+}
+
+@test "failed-logs over the cap truncates and spills to a temp file" {
+  GH_STUB_BIG_LOG=1 run bash "$CI_SH" failed-logs 42
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"output truncated"* ]]
+  [[ "$output" == *"Full log:"* ]]
+  tmpfile="$(echo "$output" | grep -oE '/[^[:space:]]*gh-ci-log[^[:space:]]*' | head -1)"
+  [ -n "$tmpfile" ]
+  [ -f "$tmpfile" ]
+  rm -f "$tmpfile"
+}
+
+@test "failed-job-logs under the cap is unchanged" {
+  run bash "$CI_SH" failed-job-logs 99
+  [ "$status" -eq 0 ]
+  [ "$output" = "short log output" ]
+}
+
+@test "failed-job-logs over the cap truncates and spills to a temp file" {
+  GH_STUB_BIG_LOG=1 run bash "$CI_SH" failed-job-logs 99
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"output truncated"* ]]
+  [[ "$output" == *"Full log:"* ]]
+  tmpfile="$(echo "$output" | grep -oE '/[^[:space:]]*gh-ci-log[^[:space:]]*' | head -1)"
+  [ -n "$tmpfile" ]
+  [ -f "$tmpfile" ]
+  rm -f "$tmpfile"
+}
