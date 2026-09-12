@@ -266,6 +266,9 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                 }
                 d["threads"].append(thread)
             else:
+                if type(reply_to) is not int:
+                    self._error(422, "Validation Failed: in_reply_to must be an integer")
+                    return
                 thread = st.thread_by_comment_db_id(reply_to)
                 if thread is None:
                     self._error(422, "Validation Failed: in_reply_to %s is not "
@@ -400,7 +403,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         query = body.get("query") or ""
         variables = body.get("variables") or {}
         try:
-            selections, fragments = gql.parse_document(query)
+            operation_type, selections, fragments = gql.parse_document(query)
         except gql.ParseError as exc:
             self._graphql_errors(None, ["Parse error on GraphQL document: %s" % exc])
             return
@@ -411,14 +414,21 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             self._entry["graphql_fields"] = sorted(
                 {f["name"] for f in gql._flatten(selections, fragments)})
         errors = []
-        universe = self._universe(errors)
+        universe = self._universe(errors, operation_type)
+        for field in gql._flatten(selections, fragments):
+            if field["name"] != "__typename" and field["name"] not in universe:
+                errors.append("Field '%s' doesn't exist on type '%s'" %
+                              (field["name"], operation_type.capitalize()))
+        if errors:
+            self._graphql_errors(None, errors)
+            return
         data = gql.project(selections, universe, fragments, variables)
         if errors:
             self._graphql_errors(data if any(data.values()) else None, errors)
             return
         self._send(200, {"data": data})
 
-    def _universe(self, errors):
+    def _universe(self, errors, operation_type):
         """Every root field the mock can answer, as a projectable tree.
 
         Values may be callables; the projector invokes them with the resolved
@@ -525,19 +535,24 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                     "clientMutationId": inp.get("clientMutationId"),
                     "comment": _review_comment_node(d, comment)}
 
-        return {
+        query = {
             "__typename": "Query",
             "repository": repository,
             "viewer": _viewer_node(d),
             "node": node,
             "rateLimit": {"limit": 5000, "remaining": 4999, "cost": 1,
                           "used": 1, "resetAt": d["now"]},
+        }
+        mutation = {
+            "__typename": "Mutation",
             "resolveReviewThread": toggle(True, "resolveReviewThread"),
             "unresolveReviewThread": toggle(False, "unresolveReviewThread"),
             "addComment": add_comment,
             "addPullRequestReviewThreadReply": reply_to_thread,
             "addPullRequestReviewComment": add_review_comment,
         }
+        return {"query": query, "mutation": mutation}.get(
+            operation_type, {"__typename": operation_type.capitalize()})
 
     def _graphql_errors(self, data, messages):
         # GraphQL errors ride on HTTP 200 with an `errors` array, as on real GitHub.

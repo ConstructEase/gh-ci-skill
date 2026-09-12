@@ -331,6 +331,10 @@ forge_stop() {
   bash "$FORGE_HOME/forge.sh" stop "$BATS_TEST_TMPDIR/forge" || true
 }
 
+teardown() {
+  forge_stop
+}
+
 # The recorded calls, newest last, as a JSON array.
 forge_calls() {
   jq -s '.' "$FORGE_CALLS"
@@ -348,7 +352,6 @@ first_thread_id() {
   [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
   [ "$(echo "$output" | jq -r '.threads[0].comments.nodes[0].databaseId')" = "3408268489" ]
   echo "$output" | jq -e '.threads[0].id | startswith("PRRT_")'
-  forge_stop
 }
 
 @test "forge: reply POSTs to the review-comments endpoint with a numeric in_reply_to" {
@@ -363,7 +366,6 @@ first_thread_id() {
   # in_reply_to must be a JSON number; real GitHub 422s on a string
   [ "$(echo "$call" | jq -r '.body.in_reply_to | type')" = "number" ]
   [ "$(echo "$call" | jq -r '.body.in_reply_to')" = "3408268489" ]
-  forge_stop
 }
 
 @test "forge: reply appends to the thread it was addressed to" {
@@ -375,7 +377,17 @@ first_thread_id() {
   [ "$(echo "$output" | jq -r '.threads[0].comments.nodes[1].body')" = "Fixed in commit abc123" ]
   # and no other thread grew
   [ "$(echo "$output" | jq -r '.threads[1].comments.nodes | length')" -eq 1 ]
-  forge_stop
+}
+
+@test "forge: string in_reply_to is rejected without changing a thread" {
+  forge_start
+  run gh api "repos/$GH_REPO/pulls/1/comments" \
+        -f body="wrong JSON type" -f in_reply_to=3408268489
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"in_reply_to must be an integer"* ]]
+  run bash "$CI_SH" threads 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.threads[0].comments.nodes | length')" -eq 1 ]
 }
 
 @test "forge: reply to an unknown comment id surfaces GitHub's validation error" {
@@ -383,7 +395,6 @@ first_thread_id() {
   run bash "$CI_SH" reply 1 999999999 "into the void"
   [ "$status" -ne 0 ]
   [[ "$output" == *"in_reply_to"* ]]
-  forge_stop
 }
 
 @test "forge: comment POSTs to the issue-comments endpoint, not the review one" {
@@ -395,7 +406,6 @@ first_thread_id() {
   # the discrimination an LLM judge reading prose cannot make
   [ "$(echo "$output" | jq '[.[] | select(.method=="POST" and (.rest_path|test("/pulls/1/comments$")))] | length')" -eq 0 ]
   [ "$(echo "$output" | jq -r '[.[] | select(.method=="POST" and (.rest_path|test("/issues/1/comments$")))][0].body.body')" = "CI is green on this branch" ]
-  forge_stop
 }
 
 @test "forge: resolve sends the resolveReviewThread mutation and the thread flips" {
@@ -412,7 +422,6 @@ first_thread_id() {
   [ "$(echo "$output" | jq -r '.threads | length')" -eq 14 ]
   run bash "$CI_SH" threads 1 --all
   [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
-  forge_stop
 }
 
 @test "forge: unresolve is recorded as its own mutation and reverses resolve" {
@@ -429,14 +438,31 @@ first_thread_id() {
   [ "$(echo "$output" | jq '[.[] | select(.graphql_op=="resolveReviewThread")] | length')" -eq 1 ]
   run bash "$CI_SH" threads 1
   [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
-  forge_stop
+}
+
+@test "forge: a mutation field on Query is rejected without changing state" {
+  forge_start
+  tid="$(first_thread_id)"
+  run gh api graphql -f query="{ resolveReviewThread(input: {threadId: \"$tid\"}) { thread { isResolved } } }"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"doesn't exist on type 'Query'"* ]]
+  run bash "$CI_SH" threads 1
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
+}
+
+@test "forge: an anonymous mutation executes on the Mutation root" {
+  forge_start
+  tid="$(first_thread_id)"
+  run gh api graphql -f query="mutation { resolveReviewThread(input: {threadId: \"$tid\"}) { thread { isResolved } } }"
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.data.resolveReviewThread.thread.isResolved')" = "true" ]
 }
 
 @test "forge: resolving an unknown thread id returns a GraphQL error" {
   forge_start
   run bash "$CI_SH" resolve PRRT_kwNOTATHREAD
   [[ "$output" == *"Could not resolve to a node"* ]]
-  forge_stop
 }
 
 @test "forge: reset restores the seeded state and truncates the call log" {
@@ -449,7 +475,6 @@ first_thread_id() {
   [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
   run bash "$CI_SH" comments 1
   [ "$(echo "$output" | jq -r 'length')" -eq 0 ]
-  forge_stop
 }
 
 @test "forge: the environment it hands out points gh away from github.com" {
@@ -464,7 +489,6 @@ first_thread_id() {
   [ "$output" = "calebl" ]
   run forge_calls
   [ "$(echo "$output" | jq '[.[] | select(.rest_path=="/user")] | length')" -eq 1 ]
-  forge_stop
 }
 
 @test "forge: the dedicated review-comment replies endpoint works and is logged" {
@@ -479,7 +503,6 @@ first_thread_id() {
   run bash "$CI_SH" threads 1
   [ "$(echo "$output" | jq -r '.threads | length')" -eq 15 ]
   [ "$(echo "$output" | jq -r '.threads[0].comments.nodes[-1].body')" = "via the replies endpoint" ]
-  forge_stop
 }
 
 @test "forge: the call log records the response status of every request" {
@@ -491,7 +514,6 @@ first_thread_id() {
   # which is what lets a grader count only the calls GitHub actually took
   [ "$(echo "$output" | jq -r '[.[] | select(.rest_path|test("/issues/1/comments$"))][0].status')" = "201" ]
   [ "$(echo "$output" | jq -r '[.[] | select(.rest_path|test("/pulls/1/comments$"))][0].status')" = "422" ]
-  forge_stop
 }
 
 @test "forge: a GraphQL error is flagged in the call log despite the 200" {
@@ -500,7 +522,6 @@ first_thread_id() {
   run forge_calls
   [ "$(echo "$output" | jq -r '[.[] | select(.graphql_op=="resolveReviewThread")][0].status')" = "200" ]
   [ "$(echo "$output" | jq -r '[.[] | select(.graphql_op=="resolveReviewThread")][0].graphql_errors')" = "true" ]
-  forge_stop
 }
 
 @test "forge: the call log records the GraphQL mutation field, not just the operation name" {
@@ -517,7 +538,6 @@ first_thread_id() {
   [ "$status" -eq 0 ]
   run forge_calls
   [ "$(echo "$output" | jq '[.[] | select(.graphql_fields != null and (.graphql_fields|index("addComment")))] | length')" -eq 1 ]
-  forge_stop
 }
 
 @test "forge: allocated comment ids look like real GitHub ids" {
@@ -530,7 +550,6 @@ first_thread_id() {
   # and not consecutive: an id ending in a round run of digits reads as
   # fabricated to anything grading the agent's reported URL
   [ "$b" -gt "$((a + 1))" ]
-  forge_stop
 }
 
 @test "forge: a posted comment can be edited and deleted again" {
@@ -545,7 +564,6 @@ first_thread_id() {
   # the delete is in the log as a 204, so a grader can tell the write did not survive
   run forge_calls
   [ "$(echo "$output" | jq -r '[.[] | select(.method=="DELETE")][0].status')" = "204" ]
-  forge_stop
 }
 
 @test "forge: deleting a thread's root review comment removes the thread" {
@@ -553,5 +571,4 @@ first_thread_id() {
   run gh api "repos/$GH_REPO/pulls/comments/3408268489" -X DELETE
   [ "$status" -eq 0 ]
   [ "$(bash "$CI_SH" threads 1 | jq -r '.threads | length')" -eq 14 ]
-  forge_stop
 }

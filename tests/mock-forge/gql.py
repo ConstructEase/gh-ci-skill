@@ -180,13 +180,14 @@ def _parse_selection_set(cur):
 
 
 def parse_document(text):
-    """-> (root_selection_set, {fragment_name: selection_set})
+    """-> (operation_type, root_selection_set, fragments)
 
     If the document holds several operations, the first is used; clients that
     send more than one also send operationName, which nothing here needs.
     """
     fragments = {}
     root = None
+    operation_type = None
     cur = _Cursor(text)
     while True:
         ch = cur.peek()
@@ -196,6 +197,7 @@ def parse_document(text):
             sel = _parse_selection_set(cur)
             if root is None:
                 root = sel
+                operation_type = "query"
             continue
         word = cur.name()
         if word == "fragment":
@@ -228,11 +230,12 @@ def parse_document(text):
             sel = _parse_selection_set(cur)
             if root is None:
                 root = sel
+                operation_type = word
             continue
         raise ParseError("unexpected token %r at offset %d" % (word, cur.i))
     if root is None:
         raise ParseError("document has no operation")
-    return root, fragments
+    return operation_type, root, fragments
 
 
 def resolve_args(args, variables):
