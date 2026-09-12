@@ -45,19 +45,29 @@ _fetch_check_runs() {
   local ref="$1"
   local per_page="$2"
   local output
+  local error
+  local error_file
   local status
 
-  if output="$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=$per_page" 2>&1)"; then
-    CHECK_RUNS_REF="$ref"
-    CHECK_RUNS_JSON="$output"
-    return
+  error_file="$(mktemp -t gh-ci-check-runs.XXXXXX)"
+  if output="$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=$per_page" 2>"$error_file")"; then
+    status=0
   else
     status=$?
   fi
+  error="$(<"$error_file")"
+  rm -f "$error_file"
+
+  if [ "$status" -eq 0 ]; then
+    [ -z "$error" ] || printf '%s\n' "$error" >&2
+    CHECK_RUNS_REF="$ref"
+    CHECK_RUNS_JSON="$output"
+    return
+  fi
 
   if [[ "$ref" =~ ^[0-9]+$ ]] && \
-     { [[ "$output" == *"(HTTP 404)"* ]] ||
-       [[ "$output" == *"No commit found for SHA"*"(HTTP 422)"* ]]; }; then
+     { [[ "$error" == *"(HTTP 404)"* ]] ||
+       [[ "$error" == *"No commit found for SHA"*"(HTTP 422)"* ]]; }; then
     local sha
     sha="$(gh pr view "$ref" --repo "$OWNER/$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
     if [ -n "$sha" ]; then
@@ -67,7 +77,7 @@ _fetch_check_runs() {
     fi
   fi
 
-  printf '%s\n' "$output" >&2
+  [ -z "$error" ] || printf '%s\n' "$error" >&2
   return "$status"
 }
 

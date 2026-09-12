@@ -87,6 +87,9 @@ JSON
       printf '%s\n' "$@" >> "$GH_STUB_LOG"
       printf '\n' >> "$GH_STUB_LOG"
     fi
+    if [ "${GH_STUB_API_DEBUG:-}" = "1" ]; then
+      printf 'debug: api request completed\n' >&2
+    fi
     # Route on the path in $2 to get fixture JSON
     _json=""
     case "${2:-}" in

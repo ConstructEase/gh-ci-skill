@@ -236,6 +236,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "check-runs keeps successful API diagnostics out of JSON" {
+  debug_log="$BATS_TEST_TMPDIR/gh-debug"
+  GH_STUB_API_DEBUG=1 run bash -c 'bash "$1" check-runs abc123 2>"$2"' _ "$CI_SH" "$debug_log"
+  [ "$status" -eq 0 ]
+  printf '%s\n' "$output" | jq -e 'type == "array"' >/dev/null
+  run grep -Fx 'debug: api request completed' "$debug_log"
+  [ "$status" -eq 0 ]
+}
+
 @test "check-wait resolves a PR-number ref to its head SHA" {
   log="$BATS_TEST_TMPDIR/gh-calls"
   GH_STUB_LOG="$log" run bash "$CI_SH" check-wait "Deploy" 124 --max 1 --interval 0
