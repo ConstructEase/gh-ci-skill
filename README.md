@@ -150,8 +150,8 @@ bats tests/
 Some tests drive `ci.sh` through [`tests/mock-forge/`](tests/mock-forge/), a
 local recording GitHub-API mock that `gh` talks to over loopback HTTPS, so the
 write verbs are asserted on the HTTP request rather than on the `gh` arguments.
-It makes no outward calls; the tests skip themselves if `gh`, `python3`,
-`openssl` or `curl` is unavailable.
+It makes no outward calls; its own README lists the fixture's development
+requirements.
 
 Note: the skill lives in the `gh-ci/` subdirectory (`gh-ci/SKILL.md` + `gh-ci/resources/ci.sh`). The skills CLI treats a directory containing a SKILL.md as the skill and copies that directory on install. Keeping the skill out of the repo root matters: current `npx skills` versions install a root-level SKILL.md as a single file and drop everything else, which would break `ci.sh` on `npx skills update`. Repo-level files (`tests/`, `.github/`, `README.md`, `LICENSE`) stay outside the skill directory and are never installed.
 

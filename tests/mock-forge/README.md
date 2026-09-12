@@ -63,10 +63,11 @@ nobody anticipated — gets a well-formed answer rather than a parse failure.
 
 ## Requirements
 
-`python3` (standard library only), `openssl` for the throwaway cert, and
-`curl` for `forge.sh reset`. All three are present on `ubuntu-latest`, which is
-what `.github/workflows/test.yml` runs on. The bats tests that use the fixture
-`skip` themselves if any of them, or `gh` itself, is missing.
+The lifecycle helper requires `python3` (standard library only), `openssl` for
+the throwaway cert, and `curl` for `forge.sh reset`. The bats tests additionally
+require `gh` and `jq`; they skip themselves when any required tool is missing.
+All five tools are present on `ubuntu-latest`, which is what
+`.github/workflows/test.yml` runs on.
 
 ## Fidelity
 
