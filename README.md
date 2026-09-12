@@ -44,7 +44,7 @@ permission prompts:
 
 | Condition | Instruction given to the agent | Environment |
 |---|---|---|
-| gh-ci | this skill's `gh-ci/SKILL.md` (4,603 B) | `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
+| gh-ci | gh-ci 1.2.3's `gh-ci/SKILL.md` (4,603 B) | `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
 | `gh` | a minimal "you have the `gh` CLI, use it" note (189 B) | no skill; `gh-axi` removed from `PATH` |
 | gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
 
@@ -107,14 +107,15 @@ is a wash; the spread is entirely in turns, tokens, and wall clock.
   round-trip is not cheaper. That is why `cache_read` dominates every row above,
   and why the ranking tracks API calls far more closely than it tracks payload
   bytes.
-- **Most of gh-ci's overhead here is the script-location probe.** `SKILL.md` tells
-  the agent to probe candidate paths for `ci.sh` before running anything; that cost
-  a dedicated first turn in 24 of 25 gh-ci runs, on every task, before any GitHub
-  call happened.
-- **T5 is a capability gap, not a formatting difference.** `ci.sh pr` does not
-  return `mergeable`/`mergeStateStatus`, so in 5 of 5 gh-ci runs the agent read
-  `ci.sh pr` and then fell back to plain `gh pr view --json mergeable,...` — the
-  extra turn is the whole difference on that row.
+- **Most of gh-ci 1.2.3's overhead here was the script-location probe.** Its
+  `SKILL.md` told the agent to probe candidate paths for `ci.sh` before running
+  anything; that cost a dedicated first turn in 24 of 25 gh-ci runs, on every
+  task, before any GitHub call happened.
+- **T5 exposed a capability gap in gh-ci 1.2.3, not a formatting difference.**
+  Its `ci.sh pr` did not return `mergeable`/`mergeStateStatus`, so in 5 of 5
+  gh-ci runs the agent read `ci.sh pr` and then fell back to plain
+  `gh pr view --json mergeable,...` — the extra turn is the whole difference on
+  that row.
 - **T2 understates gh-ci's named-check wait.** The fixture check had already
   completed, so `gh` and gh-axi could answer with a single one-shot probe. Neither
   can actually *wait* on a named check; measuring that would need a check still in
