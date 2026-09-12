@@ -307,6 +307,7 @@ setup() {
 # ---------------------------------------------------------------------------
 
 forge_start() {
+  local forge_env
   for tool in gh python3 openssl curl jq; do
     command -v "$tool" >/dev/null 2>&1 || skip "$tool is not installed"
   done
@@ -314,8 +315,15 @@ forge_start() {
   # Drop the stub directory: these tests need the real gh binary.
   export PATH="${PATH#"$BATS_TEST_DIRNAME/stubs:"}"
   command -v gh >/dev/null 2>&1 || skip "gh is not installed"
-  eval "$(bash "$FORGE_HOME/forge.sh" start "$BATS_TEST_TMPDIR/forge")" \
-    || skip "mock forge did not start"
+  export GH_TOKEN=ghp_invalidinvalidinvalidinvalidinvalid
+  export GITHUB_TOKEN=ghp_invalidinvalidinvalidinvalidinvalid
+  unset REPO_NWO GH_REPO
+  forge_env="$(bash "$FORGE_HOME/forge.sh" start "$BATS_TEST_TMPDIR/forge")" || {
+    local start_status=$?
+    echo "mock forge did not start" >&2
+    return "$start_status"
+  }
+  eval "$forge_env"
 }
 
 forge_stop() {
