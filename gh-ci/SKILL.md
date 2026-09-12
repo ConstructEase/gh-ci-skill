@@ -20,7 +20,7 @@ A shell script that wraps the `gh` CLI and GitHub GraphQL API into short, compos
 Invoke each command with this single locate-and-run form:
 
 ```bash
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" <subcommand> ...
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" <subcommand> ...
 ```
 
 Priority rationale:
@@ -81,52 +81,52 @@ Priority rationale:
 
 ```bash
 # Check latest run status
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" status
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" status
 
 # Wait for it to finish
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" wait
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" wait
 
 # If it failed, get the logs
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" failed-logs
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" failed-logs
 ```
 
 ### Poll a check run (e.g. third-party review bot)
 
 ```bash
 # List all check runs for the current HEAD
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" check-runs
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" check-runs
 
 # Filter to a specific check by name
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" check-runs --name "Seer Code Review"
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" check-runs --name "Seer Code Review"
 
 # Wait for a specific check to complete (max ~5 min)
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" check-wait "Seer Code Review"
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" check-wait "Seer Code Review"
 ```
 
 ### Review PR feedback
 
 ```bash
 # See unresolved review threads
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" threads
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" threads
 
 # Fetch a specific comment by its GitHub URL (inline or top-level)
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" get-comment "https://github.com/owner/repo/pull/123#discussion_r3356824857"
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" get-comment "https://github.com/owner/repo/pull/123#discussion_r3356824857"
 
 # Reply to a review comment (use databaseId from threads output)
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" reply 123 456789 "Fixed in the latest commit"
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" reply 123 456789 "Fixed in the latest commit"
 
 # Resolve the thread (use GraphQL node id from threads output)
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" resolve PRRT_kwDOABC123
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" resolve PRRT_kwDOABC123
 ```
 
 ### Post a PR comment
 
 ```bash
 # Auto-detects PR from current branch
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" comment "CI is green, ready for re-review"
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" comment "CI is green, ready for re-review"
 
 # Or specify the PR number
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" comment 123 "CI is green, ready for re-review"
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" comment 123 "CI is green, ready for re-review"
 ```
 
 ## Output
@@ -134,8 +134,8 @@ bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --sho
 All commands output JSON where useful. Pipe to `jq` for further processing:
 
 ```bash
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" status | jq '.conclusion'
-bash "$(for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/gh-ci" "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gh-ci" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" threads | jq '.threads | length'
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" status | jq '.conclusion'
+bash "$(_root="$(git rev-parse --show-toplevel 2>/dev/null)"; for _d in "${skill_dir:-}" /mnt/skills/user/gh-ci "${_root:+$_root/.agents/skills/gh-ci}" "${_root:+$_root/.claude/skills/gh-ci}" ~/.agents/skills/gh-ci ~/.claude/skills/gh-ci; do [ -n "$_d" ] && [ -f "$_d/resources/ci.sh" ] && { printf '%s\n' "$_d/resources/ci.sh"; break; }; done)" threads | jq '.threads | length'
 ```
 
 ## Notes
