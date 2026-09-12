@@ -41,6 +41,69 @@ _resolve_pr() {
   fi
 }
 
+_fetch_check_runs() {
+  local ref="$1"
+  local per_page="$2"
+  local output
+  local error
+  local error_file
+  local status
+
+  error_file="$(mktemp -t gh-ci-check-runs.XXXXXX)"
+  if output="$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=$per_page" 2>"$error_file")"; then
+    status=0
+  else
+    status=$?
+  fi
+  error="$(<"$error_file")"
+  rm -f "$error_file"
+
+  if [ "$status" -eq 0 ]; then
+    [ -z "$error" ] || printf '%s\n' "$error" >&2
+    CHECK_RUNS_REF="$ref"
+    CHECK_RUNS_JSON="$output"
+    return
+  fi
+
+  if [[ "$ref" =~ ^[0-9]+$ ]] && \
+     { [[ "$error" == *"(HTTP 404)"* ]] ||
+       [[ "$error" == *"No commit found for SHA"*"(HTTP 422)"* ]]; }; then
+    local sha
+    sha="$(gh pr view "$ref" --repo "$OWNER/$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
+    if [ -n "$sha" ]; then
+      CHECK_RUNS_REF="$sha"
+      CHECK_RUNS_JSON="$(gh api "repos/$OWNER/$REPO/commits/$sha/check-runs?per_page=$per_page")"
+      return
+    fi
+  fi
+
+  [ -z "$error" ] || printf '%s\n' "$error" >&2
+  return "$status"
+}
+
+# Print $1 (a captured command's output) as-is if it is at or under the cap,
+# otherwise print the first ~20000 chars plus a truncation trailer and spill
+# the full content to a temp file outside the repo.
+_emit_capped() {
+  local content="$1"
+  local cap=20000
+  local len=${#content}
+  if [ "$len" -le "$cap" ]; then
+    printf '%s' "$content"
+    return
+  fi
+  local tmp
+  tmp="$(mktemp -t gh-ci-log.XXXXXX)"
+  printf '%s' "$content" > "$tmp"
+  printf '%s' "${content:0:$cap}"
+  cat <<EOF
+
+--- output truncated: showing first $cap of $len characters ---
+Full log: $tmp
+Tip: grep -n -i "error\|fail" "$tmp"
+EOF
+}
+
 # Resolve a run ID from $1, or fall back to the latest run on the current branch.
 _resolve_run() {
   local arg="${1:-}"
@@ -154,7 +217,9 @@ case "$cmd" in
     # Logs for failed steps in a run.
     # Usage: ci.sh failed-logs [run-id]  (defaults to latest run on current branch)
     _resolve_run "${1:-}"
-    gh run view "$RUN_ID" --log-failed
+    log="$(gh run view "$RUN_ID" --log-failed; printf x)"
+    log="${log%x}"
+    _emit_capped "$log"
     ;;
 
   failed-job-logs)
@@ -169,7 +234,7 @@ case "$cmd" in
     ;;
 
   check-runs)
-    # List check runs for a commit ref (SHA, branch, or tag).
+    # List check runs for a commit ref (SHA, branch, tag, or PR number).
     # Usage: ci.sh check-runs [ref] [--name <name>] [--limit N]
     _resolve_repo
     ref=""
@@ -188,7 +253,8 @@ case "$cmd" in
         *) echo "unknown flag: $1" >&2; exit 1 ;;
       esac
     done
-    json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=$limit")
+    _fetch_check_runs "$ref" "$limit"
+    json="$CHECK_RUNS_JSON"
     if [ -n "$name" ]; then
       echo "$json" | jq --arg name "$name" \
         '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]'
@@ -234,7 +300,9 @@ case "$cmd" in
       # A commit with more than 100 check runs would still need pagination, which
       # is deliberately not added here: gh api --paginate concatenates JSON
       # documents and would break the single-document jq filter below.
-      json=$(gh api "repos/$OWNER/$REPO/commits/$ref/check-runs?per_page=100")
+      _fetch_check_runs "$ref" 100
+      ref="$CHECK_RUNS_REF"
+      json="$CHECK_RUNS_JSON"
       result=$(echo "$json" | jq --arg name "$check_name" \
         '[.check_runs[] | select(.name == $name) | {id, name, status, conclusion, started_at, completed_at, html_url, app: .app.name}]')
       count=$(echo "$result" | jq 'length')
@@ -369,7 +437,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
     # Show the PR for this branch (or a given PR).
     # Usage: ci.sh pr [pr-number]
     _resolve_pr "${1:-}"
-    gh pr view "$PR_NUMBER" --json number,url,headRefName,headRefOid,state
+    gh pr view "$PR_NUMBER" --json number,url,headRefName,headRefOid,state,mergeable,mergeStateStatus
     ;;
 
   reply)
@@ -467,23 +535,31 @@ CI run commands:
   failed-logs [run-id]
       Logs for failed steps in a run.
       Defaults to latest run on the current branch.
+      Output over ~20000 chars is truncated, with the full log spilled to a
+      temp file and a grep hint printed.
   failed-job-logs <job-id>
       Logs for failed steps in a single job.
 
 Check run commands:
   check-runs [ref] [--name <name>] [--limit N]
-      List check runs for a commit ref (SHA, branch, or tag).
+      List check runs for a commit ref (SHA, branch, tag, or PR number).
       Defaults to HEAD. Filter by name with --name.
+      Digit-only refs are tried literally before falling back to a PR head SHA
+      when the literal ref is not found.
   check-wait <name> [ref] [--interval 30] [--max 10]
       Poll until a named check run completes. Exits 0 if completed,
       124 on timeout (including if never found). Defaults to HEAD.
+      ref accepts a SHA, branch, tag, or PR number.
+      Digit-only refs are tried literally before falling back to a PR head SHA
+      when the literal ref is not found.
 
 PR read commands:
   threads [pr-number] [--all]   Review threads (unresolved+non-outdated by default).
   comments [pr-number]          Top-level PR conversation comments.
   get-comment <url>             Fetch a single comment by its GitHub URL.
   review-status [pr-number]     Review decision + per-reviewer state.
-  pr [pr-number]                PR summary (number, url, headRefName, headRefOid, state).
+  pr [pr-number]                PR summary (number, url, headRefName, headRefOid,
+                                 state, mergeable, mergeStateStatus).
 
 PR write commands:
   reply <pr> <comment-databaseId> [<body> | --file F | (stdin)]

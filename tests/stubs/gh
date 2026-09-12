@@ -32,10 +32,53 @@ case "${1:-} ${2:-}" in
 JSON
     ;;
   "run view")
-    echo '{"status":"completed","conclusion":"success","name":"CI","displayTitle":"test commit","url":"https://github.com/owner/repo/actions/runs/42"}'
+    if [[ " $* " == *" --log-failed "* ]]; then
+      if [ "${GH_STUB_BIG_LOG:-}" = "1" ]; then
+        for i in $(seq 1 1000); do
+          printf 'line %05d: some log output here padding padding\n' "$i"
+        done
+      else
+        printf 'short log output\n'
+      fi
+    else
+      echo '{"status":"completed","conclusion":"success","name":"CI","displayTitle":"test commit","url":"https://github.com/owner/repo/actions/runs/42"}'
+    fi
     ;;
   "repo view")
     echo '{"nameWithOwner":"owner/repo"}'
+    ;;
+  "pr view")
+    if [ -n "${GH_STUB_LOG:-}" ]; then
+      printf '%s\n' "$@" >> "$GH_STUB_LOG"
+      printf '\n' >> "$GH_STUB_LOG"
+    fi
+    shift 2
+    pr_num=""
+    json_fields=""
+    jq_filter=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --repo) shift 2 ;;
+        --json) json_fields="$2"; shift 2 ;;
+        --jq)   jq_filter="$2"; shift 2 ;;
+        *)      pr_num="$1"; shift ;;
+      esac
+    done
+    [ -n "$pr_num" ] || pr_num=123
+    if [ "$pr_num" = "999" ]; then
+      echo "no pull requests found for branch" >&2
+      exit 1
+    fi
+    _json="{\"number\":$pr_num,\"url\":\"https://github.com/owner/repo/pull/$pr_num\",\"headRefName\":\"feature-branch\",\"headRefOid\":\"deadbeef${pr_num}456\",\"state\":\"OPEN\",\"mergeable\":\"MERGEABLE\",\"mergeStateStatus\":\"CLEAN\"}"
+    if [ -n "$json_fields" ]; then
+      _json="$(printf '%s\n' "$_json" | jq -c --arg fields "$json_fields" \
+        '($fields | split(",")) as $fields | with_entries(select(.key as $key | $fields | index($key)))')"
+    fi
+    if [ -n "$jq_filter" ]; then
+      printf '%s\n' "$_json" | jq -r "$jq_filter"
+    else
+      printf '%s\n' "$_json"
+    fi
     ;;
   "api"*)
     # Optional call recorder: set GH_STUB_LOG to a writable path and every api
@@ -44,9 +87,28 @@ JSON
       printf '%s\n' "$@" >> "$GH_STUB_LOG"
       printf '\n' >> "$GH_STUB_LOG"
     fi
+    if [ "${GH_STUB_API_DEBUG:-}" = "1" ]; then
+      printf 'debug: api request completed\n' >&2
+    fi
     # Route on the path in $2 to get fixture JSON
     _json=""
     case "${2:-}" in
+      repos/*/commits/124/check-runs*)
+        echo "gh: No commit found for SHA: 124 (HTTP 422)" >&2
+        exit 1
+        ;;
+      repos/*/commits/125/check-runs*)
+        echo "gh: Not Found (HTTP 404)" >&2
+        exit 1
+        ;;
+      repos/*/commits/126/check-runs*)
+        echo "gh: Validation Failed (HTTP 422)" >&2
+        exit 1
+        ;;
+      repos/*/commits/999/check-runs*)
+        echo "gh: No commit found for SHA: 999 (HTTP 404)" >&2
+        exit 1
+        ;;
       repos/*/commits/*/check-runs*)
         _json='{"total_count":0,"check_runs":[]}'
         ;;
