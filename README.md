@@ -26,8 +26,13 @@ examples. Run `ci.sh help` for the complete runtime command list.
 
 ## Benchmark results
 
-Read-only half of a three-way comparison between **gh-ci** (this skill), the plain
-**`gh`** CLI, and **gh-axi**, on real GitHub CI and PR-review work.
+Three-way comparison between **gh-ci** (this skill), the plain **`gh`** CLI, and
+**gh-axi** in two tiers: five read tasks against real, unmodified GitHub state and
+three write tasks against the local recording GitHub-API mock in
+[`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
+in PR #15. A nine-run tier on gh-ci 1.2.4 validated the mock once against real GitHub
+and agreed on eight of nine cells. Nothing was created, commented on, resolved, or
+pushed on any real repository during the read tier or the rerun.
 
 ### Method
 
@@ -49,7 +54,7 @@ permission prompts:
 | gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
 
 **Fixtures** — existing, unmodified repository state. Nothing was created, commented
-on, resolved, or pushed for this benchmark.
+on, resolved, or pushed during the read tier.
 
 | Task | Fixture |
 |---|---|
