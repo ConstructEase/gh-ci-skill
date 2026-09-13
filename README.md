@@ -41,7 +41,9 @@ followed by one LLM-judge call.
 
 **Tasks** — T1 read the CI check status for a PR; T2 wait for a *named* check and
 report its conclusion; T4 read a failing Actions run's log and identify the cause;
-T5 check PR mergeability; T6 read a PR's conversation comments.
+T5 check PR mergeability; T6 read a PR's conversation comments; T7 reply to a
+specific inline review comment inside its thread; T8 post a top-level PR conversation
+comment; T9 mark a specific review thread resolved without commenting.
 
 **Conditions** — each run got a fresh temporary working directory whose *only*
 project instruction was that condition's file, with no other skills loaded and no
@@ -192,7 +194,7 @@ The write-side half uses the local recording mock in
 in PR #15, reset for each cell and graded by the recorded HTTP call plus the LLM
 judge. It comprises 45 runs.
 A prior 9-run real-GitHub validation tier on 1.2.4 agreed on 8/9 cells; that history
-was not rerun here.
+was not rerun here. T3 (list review threads) is not part of either benchmark half.
 
 No read task was dropped: all five were measurable against existing repository state
 without creating anything.
