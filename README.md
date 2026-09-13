@@ -101,7 +101,9 @@ is a wash; the spread is entirely in turns, tokens, and wall clock.
 
 **After rerun** — gh-ci 1.3.0 (this PR sets the skill version line to 1.3.2), same fixtures, prompts,
 models, and five repeats; run date 2026-09-12. Read: 75 runs. Write Tier 1: 45 runs
-against the recording mock in `tests/mock-forge`, with call-log assertion plus judge.
+against the recording mock in
+[`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), with
+call-log assertion plus judge.
 Rerun spend was $15.02 ($8.01 read, $7.01 write); no Tier 2 or real-GitHub writes.
 
 ### Before / after summary
@@ -168,8 +170,10 @@ the writes occurred.
 
 ### Write-side method history
 
-The write-side half uses a local recording mock in `tests/mock-forge/`, reset for each
-cell and graded by the recorded HTTP call plus the LLM judge. It comprises 45 runs.
+The write-side half uses the local recording mock in
+[`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
+in PR #15, reset for each cell and graded by the recorded HTTP call plus the LLM
+judge. It comprises 45 runs.
 A prior 9-run real-GitHub validation tier on 1.2.4 agreed on 8/9 cells; that history
 was not rerun here.
 
