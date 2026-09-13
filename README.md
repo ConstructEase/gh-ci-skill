@@ -129,21 +129,21 @@ Rerun spend was $15.02 ($8.01 read, $7.01 write); no Tier 2 or real-GitHub write
 Write-side results (before 1.2.4 → after 1.3.0; success is call assertion / judge;
 total input is median; API calls are medians):
 
-| Task / condition | Success before → after | Total input median (IQR) before → after | API calls before → after |
+| Task / condition | Success (call/judge) before → after | Total input median (IQR) before → after | API calls before → after |
 |---|---|---|---|
-| T7 / C-ghci | 100% (5/5) → 60% (3/5) | 155,046 (155,030–192,261) → 126,733 (126,645–166,629) | 4 → 3 |
-| T7 / C-gh | 100% (5/5) → 100% (5/5) | 105,036 (105,027–105,775) → 105,014 (104,929–105,329) | 3 → 3 |
-| T7 / C-ghaxi | 100% (5/5) → 100% (5/5) | 766,745 (702,767–949,539) → 754,698 (611,408–780,335) | 18 → 18 |
-| T8 / C-ghci | 100% (5/5) → 100% (5/5) | 147,032 (109,890–148,784) → 205,542 (159,710–246,104) | 4 → 5 |
-| T8 / C-gh | 100% (5/5) → 100% (5/5) | 68,667 (68,653–68,668) → 68,651 (68,649–68,668) | 2 → 2 |
-| T8 / C-ghaxi | 20% (1/5) → 60% (3/5) | 387,057 (112,271–433,839) → 347,056 (112,291–389,019) | 10 → 9 |
-| T9 / C-ghci | 100% (5/5) → 80% (4/5) | 154,341 (154,053–229,011) → 125,978 (125,977–126,005) | 4 → 3 |
-| T9 / C-gh | 100% (5/5) → 100% (5/5) | 106,690 (106,622–107,271) → 107,279 (106,773–107,362) | 3 → 3 |
-| T9 / C-ghaxi | 100% (5/5) → 100% (5/5) | 650,288 (609,373–818,021) → 674,866 (569,713–852,212) | 16 → 16 |
+| T7 / C-ghci | 100%/100% → 100%/60% | 155,046 (155,030–192,261) → 126,733 (126,645–166,629) | 4 → 3 |
+| T7 / C-gh | 100%/100% → 100%/100% | 105,036 (105,027–105,775) → 105,014 (104,929–105,329) | 3 → 3 |
+| T7 / C-ghaxi | 100%/100% → 100%/100% | 766,745 (702,767–949,539) → 754,698 (611,408–780,335) | 18 → 18 |
+| T8 / C-ghci | 80%/100% → 40%/100% | 147,032 (109,890–148,784) → 205,542 (159,710–246,104) | 4 → 5 |
+| T8 / C-gh | 100%/100% → 100%/100% | 68,667 (68,653–68,668) → 68,651 (68,649–68,668) | 2 → 2 |
+| T8 / C-ghaxi | 100%/20% → 100%/60% | 387,057 (112,271–433,839) → 347,056 (112,291–389,019) | 10 → 9 |
+| T9 / C-ghci | 100%/100% → 100%/80% | 154,341 (154,053–229,011) → 125,978 (125,977–126,005) | 4 → 3 |
+| T9 / C-gh | 100%/100% → 100%/100% | 106,690 (106,622–107,271) → 107,279 (106,773–107,362) | 3 → 3 |
+| T9 / C-ghaxi | 100%/100% → 100%/100% | 650,288 (609,373–818,021) → 674,866 (569,713–852,212) | 16 → 16 |
 
 The changes target turn cost: locate-and-run removes discovery, while PR-number check
 references, mergeability fields, and bounded failed logs remove fallback turns/context.
-gh-ci total input fell on T2, T4, T5, T6 and on all three write tasks, rose slightly on T1, while plain gh and gh-axi were unchanged within run-to-run noise.
+gh-ci total input fell on T2, T4, T5, T6 and on T7 and T9, rose slightly on T1, and rose on T8 (147,032 → 205,542) where three of five runs hit the trailing-flag defect and re-posted; plain gh and gh-axi were unchanged within run-to-run noise.
 
 The gh-ci T8 dip is a known unfixed trailing-flag defect: three runs folded the
 trailing `--repo` flag into the comment body, then deleted and re-posted, so the call
