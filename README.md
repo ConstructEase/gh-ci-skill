@@ -65,7 +65,7 @@ calls are distinct assistant message ids, token totals come from the terminal
 `result` event. Condition order was shuffled per repeat block. **Medians and
 inter-quartile ranges** are reported across the five repeats, never means.
 
-**Pins** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 · Claude Code CLI 2.1.267 ·
+**Pins (before)** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 · Claude Code CLI 2.1.267 ·
 agent and judge model `claude-sonnet-5` · run date **2026-09-11** · ~100 GitHub core
 REST requests for the whole experiment.
 
@@ -99,6 +99,45 @@ Every condition passed all 25 read runs. On every task, gh-ci used between about
 All 75 runs exited 0 and all 75 were judged PASS. On correctness the read-only half
 is a wash; the spread is entirely in turns, tokens, and wall clock.
 
+**After rerun** — gh-ci 1.3.0 (this PR sets the skill version line to 1.3.2), same fixtures, prompts,
+models, and five repeats; run date 2026-09-12. Read: 75 runs. Write Tier 1: 45 runs
+against the recording mock in `tests/mock-forge`, with call-log assertion plus judge.
+Rerun spend was $15.02 ($8.01 read, $7.01 write); no Tier 2 or real-GitHub writes.
+
+### Before / after summary
+
+Read success remained 100% in every condition. Median total input tokens and API calls
+(before → after) were: gh-ci 228,858 → 161,878 and 6 → 4; plain `gh` 68,899 →
+68,866 and 2 → 2; gh-axi 75,221 → 75,162 and 2 → 2. The task tables above retain
+the per-task IQRs for T1, T2, T4, T5, and T6.
+
+Write-side results (before 1.2.4 → after 1.3.0; success is call assertion / judge;
+total input is median; API calls are medians):
+
+| Task | Condition | Success before → after | Total input before → after | API calls before → after |
+|---|---|---:|---:|---:|
+| T7 inline reply | gh-ci | 100%/100% → 100%/60% | 155,046 → 126,733 | 4 → 3 |
+| T7 inline reply | plain gh | 100%/100% → 100%/100% | 105,036 → 105,014 | 3 → 3 |
+| T7 inline reply | gh-axi | 100%/100% → 100%/100% | 766,745 → 754,698 | 18 → 18 |
+| T8 top-level comment | gh-ci | 80%/100% → 40%/100% | 147,032 → 205,542 | 4 → 5 |
+| T8 top-level comment | plain gh | 100%/100% → 100%/100% | 68,667 → 68,651 | 2 → 2 |
+| T8 top-level comment | gh-axi | 100%/100% → 100%/100% | 387,057 → 347,056 | 10 → 9 |
+| T9 resolve thread | gh-ci | 100%/100% → 100%/80% | 154,341 → 125,978 | 4 → 3 |
+| T9 resolve thread | plain gh | 100%/100% → 100%/100% | 106,690 → 107,279 | 3 → 3 |
+| T9 resolve thread | gh-axi | 100%/100% → 100%/100% | 650,288 → 674,866 | 16 → 16 |
+
+The changes target turn cost: locate-and-run removes discovery, while PR-number check
+references, mergeability fields, and bounded failed logs remove fallback turns/context.
+Overall, gh-ci total input fell about 29% on reads and about 18% on writes; gh and
+gh-axi were effectively unchanged on the read rollup.
+
+The gh-ci T8 dip is a known unfixed trailing-flag defect: three runs folded the
+trailing `--repo` flag into the comment body, then deleted and re-posted, so the call
+assertion counted two comment calls. The T7/T9 judge dips are grading artifacts: the
+judge receives commands truncated to 300 characters, and the 1.3.0 locate-and-run
+one-liner puts the write subcommand beyond that cutoff; call-log assertions confirm
+the writes occurred.
+
 ### How to read this
 
 - **Payload size alone is misleading.** The number that matters is total input
@@ -127,13 +166,12 @@ is a wash; the spread is entirely in turns, tokens, and wall clock.
 - **These numbers rank ergonomics on five read tasks under one agent harness.** They
   do not rank the tools' capability surfaces, which are not interchangeable.
 
-### Not run: the write-side half
+### Write-side method history
 
-**T7 (reply to an inline review comment), T8 (post a top-level PR comment) and T9
-(resolve a review thread) were not run.** Each mutates a real pull request, and no
-fixture repository or PR was authorized for this experiment. That is the half where
-the three tools differ most — gh-ci has dedicated verbs for T7 and T9 and the other
-two have none — so nothing above speaks to the write-side review loop.
+The write-side half uses a local recording mock in `tests/mock-forge/`, reset for each
+cell and graded by the recorded HTTP call plus the LLM judge. It comprises 45 runs.
+A prior 9-run real-GitHub validation tier on 1.2.4 agreed on 8/9 cells; that history
+was not rerun here.
 
 No read task was dropped: all five were measurable against existing repository state
 without creating anything.
