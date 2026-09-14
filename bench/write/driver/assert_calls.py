@@ -106,7 +106,7 @@ def gql_comment_calls(calls):
 
 def check(task, calls, exp):
     pr = exp["pr"]
-    mark = exp["mark"]
+    expected_body = exp.get("expected_body", "%s (ref %s)" % (exp["comment_text"], exp["mark"]))
     reply_posts = rest_posts(calls, "/pulls/%s/comments" % pr)
     issue_posts = rest_posts(calls, "/issues/%s/comments" % pr)
     gql_replies = gql_reply_calls(calls)
@@ -149,8 +149,8 @@ def check(task, calls, exp):
             if thread_id not in (exp["thread_id"], exp.get("comment_node_id")):
                 return "FAIL - GraphQL reply targeted %r, expected the quoted thread" % (thread_id,)
             text = inp.get("body") or ""
-        if mark not in text:
-            return "FAIL - reply body did not carry the requested text (%r)" % mark
+        if text != expected_body:
+            return "FAIL - reply body was %r, expected %r" % (text, expected_body)
         if resolves:
             return "FAIL - also resolved a thread, which was not asked for"
         return "PASS"
@@ -170,13 +170,15 @@ def check(task, calls, exp):
         else:
             inp = ((body.get("variables") or {}).get("input")) or {}
             text = inp.get("body") or ""
-        if mark not in text:
-            return "FAIL - comment body did not carry the requested text (%r)" % mark
+        if text != expected_body:
+            return "FAIL - comment body was %r, expected %r" % (text, expected_body)
         return "PASS"
 
     if task == "T9":
         if not resolves:
             return "FAIL - no resolveReviewThread mutation was sent"
+        if len(resolves) != 1:
+            return "FAIL - made %d resolve calls, expected 1" % len(resolves)
         targets = set()
         for call in resolves:
             variables = body_of(call).get("variables") or {}

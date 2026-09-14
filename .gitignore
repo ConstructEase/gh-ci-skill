@@ -4,6 +4,8 @@ __pycache__/
 bench/read/work
 bench/read/runs
 bench/read/pathshim
+bench/read/payload
 bench/write/work
 bench/write/runs
 bench/write/pathshim
+bench/write/payload

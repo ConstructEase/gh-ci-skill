@@ -16,7 +16,8 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXP = {"pr": "1", "mark": "MARK1", "comment_id": "3408268489",
-       "thread_id": "PRRT_target", "comment_text": "x"}
+       "thread_id": "PRRT_target", "comment_text": "Fixed it.",
+       "expected_body": "Fixed it. (ref MARK1)"}
 BODY = "Fixed it. (ref MARK1)"
 
 
@@ -55,6 +56,7 @@ CASES = [
     ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": "3408268489"})], "FAIL"),
     # body lost the requested text
     ("T7", [rest(REPLY, {"body": "done", "in_reply_to": 3408268489})], "FAIL"),
+    ("T7", [rest(REPLY, {"body": "MARK1 --repo o/r", "in_reply_to": 3408268489})], "FAIL"),
     # claimed success without calling anything
     ("T7", [], "FAIL"),
     # a rejected call is not a write
@@ -72,6 +74,7 @@ CASES = [
     ("T8", [gql(["addComment"], {"input": {"subjectId": "PR_1", "body": BODY}})], "PASS"),
     ("T8", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": "no marker"})], "FAIL"),
+    ("T8", [rest(ISSUE, {"body": "MARK1 --repo o/r"})], "FAIL"),
     ("T8", [], "FAIL"),
     ("T8", [rest(ISSUE, {"body": BODY}), rest(ISSUE, {"body": BODY})], "FAIL"),
 
@@ -90,6 +93,8 @@ CASES = [
     # resolved several threads
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"}),
             gql(["resolveReviewThread"], {"threadId": "PRRT_other"})], "FAIL"),
+    ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"}),
+            gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
 ]
 
 

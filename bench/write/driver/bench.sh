@@ -12,28 +12,45 @@
 #     write-side failure that matters -- "replied to the thread" when the agent
 #     actually posted a top-level comment -- is invisible in prose.
 #
-# BENCH_TIER=1 (default) runs against the mock. BENCH_TIER=2 runs against real
-# GitHub and grades by reading the PR's state back afterwards.
-#
-# Usage: bench.sh <rep-start> <rep-end> [task-filter] [cond-filter]
+# Usage: bench.sh --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
 set -uo pipefail
 
 D="${BENCH_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FORGE="${MOCK_FORGE:-$D/../../tests/mock-forge}"
-NODEBIN=$(dirname "$(command -v claude)")
-MISESHIM=${MISE_SHIM:-}
-S1="$D/pathshim/no-ghaxi"
-S2="$D/pathshim/no-ghaxi-mise"
-NO_GHAXI_PATH="$(printf '%s' "$PATH" | sed "s#$NODEBIN#$S1#; s#$MISESHIM#$S2#")"
+REPO_ROOT="$(git -C "$D" rev-parse --show-toplevel)"
+GHCI_VERSION=""
+if [ "${1:-}" = --ghci ]; then GHCI_VERSION="${2:-}"; shift 2; fi
+case "$GHCI_VERSION" in
+  1.2.3) GHCI_COMMIT=3be16034aacffaefa462a61d269d8224b9a158a4 ;;
+  1.2.4) GHCI_COMMIT=d70569a2fdb5662a359e1200d91a1f28514d4a30 ;;
+  1.3.0) GHCI_COMMIT=cf2528060c34c16c838e247780f748fe5ab13dc3 ;;
+  *) echo "bench: --ghci must be 1.2.3, 1.2.4, or 1.3.0" >&2; exit 2 ;;
+esac
+PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
+mkdir -p "$PAYLOAD/resources"
+git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/SKILL.md" > "$PAYLOAD/SKILL.md"
+git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/resources/ci.sh" > "$PAYLOAD/resources/ci.sh"
+NO_GHAXI_PATH=""
+IFS=: read -r -a PATH_PARTS <<<"$PATH"
+for path_index in "${!PATH_PARTS[@]}"; do
+  path_part="${PATH_PARTS[$path_index]}"
+  if [ -n "$path_part" ] && [ -x "$path_part/gh-axi" ]; then
+    shim="$D/pathshim/$path_index"
+    bash "$REPO_ROOT/bench/mkpathshim.sh" "$path_part" "$shim"
+    path_part="$shim"
+  fi
+  NO_GHAXI_PATH="${NO_GHAXI_PATH:+$NO_GHAXI_PATH:}$path_part"
+done
+PATH="$NO_GHAXI_PATH" command -v claude >/dev/null || { echo "bench: claude missing from filtered PATH" >&2; exit 1; }
+if PATH="$NO_GHAXI_PATH" command -v gh-axi >/dev/null; then echo "bench: gh-axi still resolves in filtered PATH" >&2; exit 1; fi
 
 MODEL="${BENCH_MODEL:-claude-sonnet-5}"
 JUDGE_MODEL="${BENCH_JUDGE_MODEL:-claude-sonnet-5}"
 RUN_TIMEOUT="${BENCH_TIMEOUT:-240}"
 JUDGE_TIMEOUT="${BENCH_JUDGE_TIMEOUT:-120}"
-TIER="${BENCH_TIER:-1}"
-RESULTS="${BENCH_RESULTS:-$D/results.tier$TIER.tsv}"
-RUNROOT="${BENCH_RUNROOT:-$D/runs/tier$TIER}"
-TARGETS="${BENCH_TARGETS:-$D/tasks/targets.tier$TIER.tsv}"
+RESULTS="${BENCH_RESULTS:-$D/results.tier1.tsv}"
+RUNROOT="${BENCH_RUNROOT:-$D/runs/tier1}"
+TARGETS="${BENCH_TARGETS:-$D/tasks/targets.tier1.tsv}"
 FORGE_RUN="$D/forge-run"
 
 REP_START="${1:-1}"; REP_END="${2:-1}"
@@ -54,52 +71,44 @@ cond_index() {
   case "$1" in C-ghci) echo 0 ;; C-gh) echo 1 ;; C-ghaxi) echo 2 ;; esac
 }
 
-# ---------------------------------------------------------------------------
-# tier 1: one mock for the whole invocation, reset before each cell
-# ---------------------------------------------------------------------------
-forge_env=""
-if [ "$TIER" = "1" ]; then
-  rm -rf "$FORGE_RUN"; mkdir -p "$FORGE_RUN"
-  forge_env="$(bash "$FORGE/forge.sh" start "$FORGE_RUN")" || {
-    echo "driver: mock forge failed to start" >&2; exit 1; }
-  # shellcheck disable=SC1090
-  eval "$forge_env"
-  trap 'bash "$FORGE/forge.sh" stop "$FORGE_RUN"' EXIT
-  echo "driver: tier 1, mock forge at $GH_HOST"
-else
-  : "${BENCH_TIER2_REPO:?BENCH_TIER2_REPO must be set for tier 2}"
-  : "${BENCH_TIER2_PR:?BENCH_TIER2_PR must be set for tier 2}"
-  echo "driver: tier 2, REAL GitHub, $BENCH_TIER2_REPO PR #$BENCH_TIER2_PR"
-fi
+rm -rf "$FORGE_RUN"; mkdir -p "$FORGE_RUN"
+forge_env="$(bash "$FORGE/forge.sh" start "$FORGE_RUN")" || { echo "driver: mock forge failed to start" >&2; exit 1; }
+eval "$forge_env"
+trap 'bash "$FORGE/forge.sh" stop "$FORGE_RUN"' EXIT
+echo "driver: recording mock at $GH_HOST"
 
 run_cell() {
   local rep="$1" cond="$2" task="$3" offset="$4" prompt_tpl="$5"
   local ci; ci="$(cond_index "$cond")"
   local tidx=$(( (offset + (rep - 1) * 3 + ci) % 15 ))
 
-  local target_line comment_id thread_id text
+  local target_line comment_id thread_id text expected_body
   target_line="$(awk -F'\t' -v i="$tidx" '$1==i' "$TARGETS")"
   comment_id="$(cut -f2 <<<"$target_line")"
   thread_id="$(cut -f3 <<<"$target_line")"
   text="$(cut -f4- <<<"$target_line")"
 
-  local repo pr
-  if [ "$TIER" = "1" ]; then repo="$GH_REPO"; pr=1
-  else repo="$BENCH_TIER2_REPO"; pr="$BENCH_TIER2_PR"; fi
+  local repo="$GH_REPO" pr=1
 
-  local mark="WSB-t$TIER-r$rep-$cond-$task"
+  local mark="WSB-t1-r$rep-$cond-$task"
   local prompt="$prompt_tpl"
   prompt="${prompt//\{\{REPO\}\}/$repo}"
   prompt="${prompt//\{\{PR\}\}/$pr}"
   prompt="${prompt//\{\{TEXT\}\}/$text}"
   prompt="${prompt//\{\{MARK\}\}/$mark}"
   prompt="$(printf '%b' "$prompt")"
+  case "$task" in
+    T7) expected_body="Fixed in 1312fe2 — bounded the loop at 5 attempts. (ref $mark)" ;;
+    T8) expected_body="CI is green on this branch: lint, test and scan all passed. (ref $mark)" ;;
+    T9) expected_body="" ;;
+  esac
 
   local out="$RUNROOT/rep$rep/$cond/$task"
   mkdir -p "$out"
   jq -n --arg pr "$pr" --arg mark "$mark" --arg cid "$comment_id" \
         --arg tid "$thread_id" --arg text "$text" \
-    '{pr:$pr, mark:$mark, comment_id:$cid, thread_id:$tid, comment_text:$text}' \
+    --arg expected_body "$expected_body" \
+    '{pr:$pr, mark:$mark, comment_id:$cid, thread_id:$tid, comment_text:$text, expected_body:$expected_body}' \
     > "$out/expected.json"
   printf '%s' "$prompt" > "$out/prompt.txt"
 
@@ -107,13 +116,13 @@ run_cell() {
   rm -rf "$ws"; mkdir -p "$ws/.claude"
   git -C "$ws" init -q
   git -C "$ws" remote add origin "https://github.com/$repo.git"
-  cp "$D/conditions/$cond.md" "$ws/CLAUDE.md"
+  if [ "$cond" = C-ghci ]; then cp "$PAYLOAD/SKILL.md" "$ws/CLAUDE.md"; else cp "$D/conditions/$cond.md" "$ws/CLAUDE.md"; fi
 
   local runpath="$PATH"
   case "$cond" in
     C-ghci)
       mkdir -p "$ws/.claude/skills/gh-ci/resources"
-      cp "$D/payload/gh-ci/resources/ci.sh" "$ws/.claude/skills/gh-ci/resources/ci.sh"
+      cp "$PAYLOAD/resources/ci.sh" "$ws/.claude/skills/gh-ci/resources/ci.sh"
       printf '{}\n' > "$ws/.claude/settings.json"
       runpath="$NO_GHAXI_PATH" ;;
     C-gh)
@@ -126,14 +135,7 @@ JSON
       ;;
   esac
 
-  # Fresh fixture state for every cell: rep n must not see rep n-1's writes.
-  # Tier 2 cannot reset real GitHub, so it snapshots instead and grades the diff.
-  if [ "$TIER" = "1" ]; then
-    bash "$FORGE/forge.sh" reset "$FORGE_RUN"
-  else
-    bash "$D/driver/verify_tier2.sh" snapshot "$out/pre.json" \
-      || { echo "driver: tier 2 snapshot failed, skipping cell" >&2; return 0; }
-  fi
+  bash "$FORGE/forge.sh" reset "$FORGE_RUN"
 
   local t0 t1 rc
   t0=$(date +%s%3N)
@@ -151,14 +153,8 @@ JSON
   t1=$(date +%s%3N)
   local wall=$(( t1 - t0 ))
 
-  # --- call-log assertion (tier 1) / state read-back (tier 2) ---------------
-  local call_assert="SKIP"
-  if [ "$TIER" = "1" ]; then
-    cp "$FORGE_CALLS" "$out/calls.jsonl" 2>/dev/null || : > "$out/calls.jsonl"
-    call_assert="$(python3 "$D/driver/assert_calls.py" "$task" "$out/calls.jsonl" "$out/expected.json")"
-  else
-    call_assert="$(bash "$D/driver/verify_tier2.sh" grade "$task" "$out/expected.json" "$out/pre.json" 2>"$out/verify_err.txt")"
-  fi
+  cp "$FORGE_CALLS" "$out/calls.jsonl" 2>/dev/null || : > "$out/calls.jsonl"
+  local call_assert="$(python3 "$D/driver/assert_calls.py" "$task" "$out/calls.jsonl" "$out/expected.json")"
   printf '%s\n' "$call_assert" > "$out/call_assert.txt"
   local call_verdict="ERROR"
   case "$call_assert" in PASS*) call_verdict=PASS ;; FAIL*) call_verdict=FAIL ;; esac
@@ -229,17 +225,15 @@ JSON
   fi
 
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$TIER" "$rep" "$cond" "$task" "$tidx" "$rc" "$wall" \
+    "1" "$rep" "$cond" "$task" "$tidx" "$rc" "$wall" \
     "$(jq -r .api_calls <<<"$usage")" "$tool_calls" \
     "$(jq -r .in <<<"$usage")" "$(jq -r .cache_read <<<"$usage")" \
     "$(jq -r .cache_write <<<"$usage")" "$(jq -r .out <<<"$usage")" \
     "$call_verdict" "$verdict" "$(jq -r .cost <<<"$usage")" "$judge_cost" >> "$RESULTS"
 
-  echo "[t$TIER rep$rep $cond $task tgt$tidx] rc=$rc ${wall}ms tools=$tool_calls call=$call_verdict judge=$verdict"
+  echo "[rep$rep $cond $task tgt$tidx] rc=$rc ${wall}ms tools=$tool_calls call=$call_verdict judge=$verdict"
   [ "$call_verdict" != PASS ] && echo "    $call_assert"
   rm -rf "$ws"
-  # Real-GitHub writes are spaced, well under any secondary rate limit.
-  [ "$TIER" = "2" ] && sleep 2
   return 0
 }
 

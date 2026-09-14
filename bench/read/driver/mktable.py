@@ -1,60 +1,37 @@
 #!/usr/bin/env python3
-import os
-"""Render aggregate.json as the markdown tables for the README section."""
+"""Render one benchmark aggregate using the shared results schema."""
 import json
+import sys
 
-D = os.environ.get("BENCH_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TASKS = [
-    ("T1", "CI status for a PR"),
-    ("T2", "Wait on a named check"),
-    ("T4", "Read a failing run log"),
-    ("T5", "Check mergeability"),
-    ("T6", "Read PR comments"),
-]
 CONDS = [("C-ghci", "gh-ci"), ("C-gh", "`gh`"), ("C-ghaxi", "gh-axi")]
 
-a = json.load(open(f"{D}/aggregate.json"))
-cells, roll = a["cells"], a["conditions"]
+def number(value):
+    return f"{value:,.0f}"
 
+def total(metric):
+    lo, hi = metric["iqr"]
+    return f"{number(metric['med'])} ({number(lo)}–{number(hi)})"
 
-def n(x):
-    return f"{x:,.0f}"
+def render(path):
+    cells = json.load(open(path))["cells"]
+    tasks = sorted({key.split("|")[0] for key in cells}, key=lambda task: int(task[1:]))
+    print("| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|")
+    for task in tasks:
+        for condition, label in CONDS:
+            cell = cells.get(f"{task}|{condition}")
+            if not cell:
+                continue
+            success = f"{cell['pass']}/{cell['n']}"
+            if "call_pass" in cell:
+                success = f"call {cell['call_pass']}/{cell['n']}; judge {success}"
+            print(f"| {task} | {label} | {success} | {total(cell['total_in'])} | "
+                  f"{number(cell['cache_read']['med'])} | {number(cell['cache_write']['med'])} | "
+                  f"{number(cell['in_tok']['med'])} | {number(cell['out_tok']['med'])} | "
+                  f"{cell['wall_ms']['med']/1000:.1f} | {number(cell['api_calls']['med'])} | "
+                  f"{number(cell['tool_calls']['med'])} |")
 
-
-def rng(d):
-    lo, hi = d["iqr"]
-    return f"{n(d['med'])} ({n(lo)}–{n(hi)})"
-
-
-print("### Per task × condition\n")
-print(
-    "| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |"
-)
-print("|---|---|---|---|---|---|---|---|---|---|---|")
-for tid, tname in TASKS:
-    for cid, cname in CONDS:
-        c = cells.get(f"{tid}|{cid}")
-        if not c:
-            continue
-        first = f"**{tid}** {tname}" if cid == CONDS[0][0] else ""
-        print(
-            f"| {first} | {cname} | {c['success_rate']*100:.0f}% ({c['pass']}/{c['n']}) "
-            f"| {rng(c['total_in'])} | {n(c['cache_read']['med'])} | {n(c['cache_write']['med'])} "
-            f"| {n(c['in_tok']['med'])} | {n(c['out_tok']['med'])} "
-            f"| {c['wall_ms']['med']/1000:.1f} | {c['api_calls']['med']:.0f} | {c['tool_calls']['med']:.0f} |"
-        )
-
-print("\n### Rolled up across all five tasks\n")
-print(
-    "| Condition | Success | Median total input tok (IQR) | Median output tok | Median wall s | Median API calls | Median tool calls |"
-)
-print("|---|---|---|---|---|---|---|")
-for cid, cname in CONDS:
-    c = roll[cid]
-    lo, hi = c["total_in_iqr"]
-    print(
-        f"| {cname} | {c['success_rate']*100:.0f}% ({c['pass']}/{c['n']}) "
-        f"| {n(c['total_in_med'])} ({n(lo)}–{n(hi)}) | {n(c['out_med'])} "
-        f"| {c['wall_ms_med']/1000:.1f} | {c['api_calls_med']:.0f} | {c['tool_calls_med']:.0f} |"
-    )
-print(f"\ntotal spend: ${sum(c['usd'] for c in roll.values()):.2f}")
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: mktable.py AGGREGATE.json")
+    render(sys.argv[1])

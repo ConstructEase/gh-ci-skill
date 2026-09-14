@@ -3,15 +3,37 @@
 # Runs (task x condition x repeat) agent runs via `claude -p --output-format stream-json`,
 # parses usage from the stream, and grades each run with an LLM judge.
 #
-# Usage: bench.sh <rep-start> <rep-end> [task-filter] [cond-filter]
+# Usage: bench.sh --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
 set -uo pipefail
 
 D="${BENCH_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-NODEBIN=$(dirname "$(command -v claude)")
-MISESHIM=${MISE_SHIM:-}
-S1="$D/pathshim/no-ghaxi"
-S2="$D/pathshim/no-ghaxi-mise"
-NO_GHAXI_PATH="$(printf '%s' "$PATH" | sed "s#$NODEBIN#$S1#; s#$MISESHIM#$S2#")"
+REPO_ROOT="$(git -C "$D" rev-parse --show-toplevel)"
+GHCI_VERSION=""
+if [ "${1:-}" = --ghci ]; then GHCI_VERSION="${2:-}"; shift 2; fi
+case "$GHCI_VERSION" in
+  1.2.3) GHCI_COMMIT=3be16034aacffaefa462a61d269d8224b9a158a4 ;;
+  1.2.4) GHCI_COMMIT=d70569a2fdb5662a359e1200d91a1f28514d4a30 ;;
+  1.3.0) GHCI_COMMIT=cf2528060c34c16c838e247780f748fe5ab13dc3 ;;
+  *) echo "bench: --ghci must be 1.2.3, 1.2.4, or 1.3.0" >&2; exit 2 ;;
+esac
+PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
+mkdir -p "$PAYLOAD/resources"
+git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/SKILL.md" > "$PAYLOAD/SKILL.md"
+git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/resources/ci.sh" > "$PAYLOAD/resources/ci.sh"
+
+NO_GHAXI_PATH=""
+IFS=: read -r -a PATH_PARTS <<<"$PATH"
+for path_index in "${!PATH_PARTS[@]}"; do
+  path_part="${PATH_PARTS[$path_index]}"
+  if [ -n "$path_part" ] && [ -x "$path_part/gh-axi" ]; then
+    shim="$D/pathshim/$path_index"
+    bash "$REPO_ROOT/bench/mkpathshim.sh" "$path_part" "$shim"
+    path_part="$shim"
+  fi
+  NO_GHAXI_PATH="${NO_GHAXI_PATH:+$NO_GHAXI_PATH:}$path_part"
+done
+PATH="$NO_GHAXI_PATH" command -v claude >/dev/null || { echo "bench: claude missing from filtered PATH" >&2; exit 1; }
+if PATH="$NO_GHAXI_PATH" command -v gh-axi >/dev/null; then echo "bench: gh-axi still resolves in filtered PATH" >&2; exit 1; fi
 
 MODEL="${BENCH_MODEL:-claude-sonnet-5}"
 JUDGE_MODEL="${BENCH_JUDGE_MODEL:-claude-sonnet-5}"
@@ -43,13 +65,13 @@ run_cell() {
   git -C "$ws" init -q
   git -C "$ws" remote add origin "https://github.com/$repo.git"
 
-  cp "$D/conditions/$cond.md" "$ws/CLAUDE.md"
+  if [ "$cond" = C-ghci ]; then cp "$PAYLOAD/SKILL.md" "$ws/CLAUDE.md"; else cp "$D/conditions/$cond.md" "$ws/CLAUDE.md"; fi
 
   local runpath="$PATH"
   case "$cond" in
     C-ghci)
       mkdir -p "$ws/.claude/skills/gh-ci/resources"
-      cp "$D/payload/gh-ci/resources/ci.sh" "$ws/.claude/skills/gh-ci/resources/ci.sh"
+      cp "$PAYLOAD/resources/ci.sh" "$ws/.claude/skills/gh-ci/resources/ci.sh"
       printf '{}\n' > "$ws/.claude/settings.json"
       runpath="$NO_GHAXI_PATH" ;;
     C-gh)
