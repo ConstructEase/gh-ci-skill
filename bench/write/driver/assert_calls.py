@@ -151,8 +151,8 @@ def check(task, calls, exp):
             text = inp.get("body") or ""
         if text != expected_body:
             return "FAIL - reply body was %r, expected %r" % (text, expected_body)
-        if resolves:
-            return "FAIL - also resolved a thread, which was not asked for"
+        if resolves or unresolves:
+            return "FAIL - also changed review-thread state, which was not asked for"
         return "PASS"
 
     if task == "T8":
@@ -172,6 +172,8 @@ def check(task, calls, exp):
             text = inp.get("body") or ""
         if text != expected_body:
             return "FAIL - comment body was %r, expected %r" % (text, expected_body)
+        if resolves or unresolves:
+            return "FAIL - also changed review-thread state, which was not asked for"
         return "PASS"
 
     if task == "T9":

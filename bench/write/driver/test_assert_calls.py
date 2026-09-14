@@ -70,6 +70,10 @@ CASES = [
     # two successful replies is over-writing
     ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489}),
             rest(REPLY, {"body": BODY, "in_reply_to": 3408268489})], "FAIL"),
+    ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489}),
+            gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
+    ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489}),
+            gql(["unresolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
 
     # --- T8: top-level comment ---
     ("T8", [rest(ISSUE, {"body": BODY})], "PASS"),
@@ -80,6 +84,10 @@ CASES = [
     ("T8", [rest(ISSUE, {"body": "MARK1 --repo o/r"})], "FAIL"),
     ("T8", [], "FAIL"),
     ("T8", [rest(ISSUE, {"body": BODY}), rest(ISSUE, {"body": BODY})], "FAIL"),
+    ("T8", [rest(ISSUE, {"body": BODY}),
+            gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
+    ("T8", [rest(ISSUE, {"body": BODY}),
+            gql(["unresolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
 
     # --- T9: resolve exactly one thread ---
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "PASS"),
