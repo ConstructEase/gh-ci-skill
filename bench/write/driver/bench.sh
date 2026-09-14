@@ -172,7 +172,7 @@ run_cell() {
   local ws="$D/work/$rep-$cond-$task"
   rm -rf "$ws"; mkdir -p "$ws/.claude"
   git -C "$ws" init -q
-  git -C "$ws" remote add origin "https://github.com/$repo.git"
+  git -C "$ws" remote add origin "https://$GH_HOST/$repo.git"
   if [ "$cond" = C-ghci ]; then cp "$PAYLOAD/SKILL.md" "$ws/CLAUDE.md"; else cp "$REPO_ROOT/bench/conditions/$cond.md" "$ws/CLAUDE.md"; fi
 
   local runpath="$PATH"
@@ -199,7 +199,8 @@ JSON
 
   local t0 t1 rc
   t0=$(date +%s%3N)
-  ( cd "$ws" && PATH="$runpath" timeout "$RUN_TIMEOUT" \
+  mkdir -p "$out/gh-config"
+  ( cd "$ws" && GH_CONFIG_DIR="$out/gh-config" PATH="$runpath" timeout "$RUN_TIMEOUT" \
       claude -p "$prompt" \
         --model "$MODEL" \
         --output-format stream-json --verbose \
