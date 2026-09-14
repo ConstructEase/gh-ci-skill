@@ -58,25 +58,25 @@ BENCH_RESULTS=bench/read/work/results.1.2.3.tsv BENCH_RUNROOT=bench/read/runs/1.
   bench/read/driver/bench.sh --ghci 1.2.3 1 5
 python3 bench/read/driver/aggregate.py bench/read/work/results.1.2.3.tsv \
   bench/read/work/aggregate.1.2.3.json
-python3 bench/read/driver/mktable.py bench/read/work/aggregate.1.2.3.json
+python3 bench/mktable.py bench/read/work/aggregate.1.2.3.json
 
 BENCH_RESULTS=bench/read/work/results.1.3.0.tsv BENCH_RUNROOT=bench/read/runs/1.3.0 \
   bench/read/driver/bench.sh --ghci 1.3.0 1 5
 python3 bench/read/driver/aggregate.py bench/read/work/results.1.3.0.tsv \
   bench/read/work/aggregate.1.3.0.json
-python3 bench/read/driver/mktable.py bench/read/work/aggregate.1.3.0.json
+python3 bench/mktable.py bench/read/work/aggregate.1.3.0.json
 
 BENCH_RESULTS=bench/write/work/results.1.2.4.tsv BENCH_RUNROOT=bench/write/runs/1.2.4 \
   bench/write/driver/bench.sh --ghci 1.2.4 1 5
 python3 bench/write/driver/aggregate.py bench/write/work/results.1.2.4.tsv \
   bench/write/work/aggregate.1.2.4.json
-python3 bench/write/driver/mktable.py bench/write/work/aggregate.1.2.4.json
+python3 bench/mktable.py bench/write/work/aggregate.1.2.4.json
 
 BENCH_RESULTS=bench/write/work/results.1.3.0.tsv BENCH_RUNROOT=bench/write/runs/1.3.0 \
   bench/write/driver/bench.sh --ghci 1.3.0 1 5
 python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.0.tsv \
   bench/write/work/aggregate.1.3.0.json
-python3 bench/write/driver/mktable.py bench/write/work/aggregate.1.3.0.json
+python3 bench/mktable.py bench/write/work/aggregate.1.3.0.json
 ```
 
 The separate `BENCH_RESULTS` and `BENCH_RUNROOT` paths prevent version runs from

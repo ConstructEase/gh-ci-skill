@@ -27,9 +27,10 @@ def rest(path, body, status=201, method="POST"):
             "body": body, "status": status}
 
 
-def gql(fields, variables=None, status=200, errors=False, arguments=None):
+def gql(fields, variables=None, status=200, errors=False, arguments=None,
+        query=None):
     call = {"method": "POST", "path": "/api/graphql", "rest_path": "/api/graphql",
-            "body": {"query": "mutation Named { %s }" % fields[0],
+            "body": {"query": query or "mutation Named { %s }" % fields[0],
                      "variables": variables or {}},
             "status": status, "graphql_fields": sorted(fields)}
     if arguments is not None:
@@ -65,6 +66,9 @@ CASES = [
         ("addPullRequestReviewThreadReply", {"input": {
             "pullRequestReviewThreadId": "PRRT_target", "body": BODY}}),
     ])], "FAIL"),
+    ("T7", [gql(["addPullRequestReviewThreadReply"],
+                {"input": {"pullRequestReviewThreadId": "PRRT_target", "body": BODY}},
+                query="mutation Named($input:ReplyInput!){a:addPullRequestReviewThreadReply(input:$input){comment{id}}b:addPullRequestReviewThreadReply(input:$input){comment{id}}}")], "FAIL"),
     # the failure an LLM judge cannot see
     ("T7", [rest(ISSUE, {"body": BODY})], "FAIL"),
     ("T7", [gql(["addComment"], {"input": {"subjectId": "PR_1", "body": BODY}})], "FAIL"),
@@ -107,6 +111,9 @@ CASES = [
         ("addComment", {"input": {"subjectId": "PR_1", "body": BODY}}),
         ("addComment", {"input": {"subjectId": "PR_1", "body": BODY}}),
     ])], "FAIL"),
+    ("T8", [gql(["addComment"],
+                {"input": {"subjectId": "PR_1", "body": BODY}},
+                query="mutation Named($input:AddCommentInput!){a:addComment(input:$input){clientMutationId}b:addComment(input:$input){clientMutationId}}")], "FAIL"),
     ("T8", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": "no marker"})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": "MARK1 --repo o/r"})], "FAIL"),
@@ -132,6 +139,9 @@ CASES = [
         ("resolveReviewThread", {"input": {"threadId": "PRRT_target"}}),
         ("resolveReviewThread", {"input": {"threadId": "PRRT_target"}}),
     ])], "FAIL"),
+    ("T9", [gql(["resolveReviewThread"],
+                {"input": {"threadId": "PRRT_target"}},
+                query="mutation Named($input:ResolveReviewThreadInput!){a:resolveReviewThread(input:$input){thread{id}}b:resolveReviewThread(input:$input){thread{id}}}")], "FAIL"),
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_other"})], "FAIL"),
     # resolved then undid it
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"}),

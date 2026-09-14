@@ -11,9 +11,19 @@ Usage: assert_calls.py <task> <calls.jsonl> <expected.json>
 Prints "PASS" or "FAIL - <reason>" and exits 0 either way; exits 2 on bad input.
 """
 
+import importlib.util
 import json
+import os
 import re
 import sys
+
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))))
+GQL_PATH = os.path.join(REPO_ROOT, "tests", "mock-forge", "gql.py")
+GQL_SPEC = importlib.util.spec_from_file_location("mock_forge_gql", GQL_PATH)
+GQL = importlib.util.module_from_spec(GQL_SPEC)
+GQL_SPEC.loader.exec_module(GQL)
 
 
 def load(path):
@@ -127,12 +137,39 @@ def legacy_mutation_input(call):
     return variables
 
 
+def legacy_mutation_occurrences(call, field):
+    body = body_of(call)
+    try:
+        operations, fragments = GQL.parse_document(body.get("query") or "")
+    except GQL.ParseError:
+        return [(call, legacy_mutation_input(call))]
+    operation_name = body.get("operationName")
+    if operation_name is None:
+        operation = operations[0] if len(operations) == 1 else None
+    else:
+        operation = next((candidate for candidate in operations
+                          if candidate["name"] == operation_name), None)
+    if operation is None:
+        return [(call, legacy_mutation_input(call))]
+    matches = [candidate for candidate in
+               GQL._flatten(operation["selections"], fragments)
+               if candidate["name"] == field]
+    if not matches:
+        return [(call, legacy_mutation_input(call))]
+    variables = body.get("variables") or {}
+    resolved = [normalized_input(GQL.resolve_args(candidate["args"], variables))
+                for candidate in matches]
+    if len(resolved) == 1 and not resolved[0]:
+        resolved[0] = legacy_mutation_input(call)
+    return [(call, inp) for inp in resolved]
+
+
 def mutation_occurrences(calls, field):
     out = []
     for call in graphql(calls, field):
         recorded = call.get("graphql_arguments")
         if recorded is None:
-            out.append((call, legacy_mutation_input(call)))
+            out.extend(legacy_mutation_occurrences(call, field))
             continue
         out.extend((call, normalized_input(item.get("arguments")))
                    for item in recorded if item.get("field") == field)

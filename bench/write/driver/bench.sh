@@ -149,7 +149,7 @@ run_cell() {
   rm -rf "$ws"; mkdir -p "$ws/.claude"
   git -C "$ws" init -q
   git -C "$ws" remote add origin "https://github.com/$repo.git"
-  if [ "$cond" = C-ghci ]; then cp "$PAYLOAD/SKILL.md" "$ws/CLAUDE.md"; else cp "$D/conditions/$cond.md" "$ws/CLAUDE.md"; fi
+  if [ "$cond" = C-ghci ]; then cp "$PAYLOAD/SKILL.md" "$ws/CLAUDE.md"; else cp "$REPO_ROOT/bench/conditions/$cond.md" "$ws/CLAUDE.md"; fi
 
   local runpath="$PATH"
   case "$cond" in

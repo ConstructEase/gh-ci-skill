@@ -5,8 +5,8 @@ Run date: 2026-09-11. Repo change delivered: `README.md` "Benchmark results" onl
 ## Layout
 - `driver/bench.sh`     — the driver (`claude -p --output-format stream-json` per cell + LLM judge)
 - `driver/aggregate.py` — median/IQR aggregation -> `aggregate.json`
-- `driver/mktable.py`   — renders `aggregate.json` as the README markdown tables
-- `conditions/`         — the plain-gh and gh-axi condition instruction files; gh-ci is materialized from its pinned commit
+- `bench/mktable.py`    — renders `aggregate.json` as the README markdown tables
+- `bench/conditions/`   — the shared plain-gh and gh-axi condition instruction files; gh-ci is materialized from its pinned commit
 - `tasks/tasks.tsv`     — task id, fixture repo, prompt
 - `tasks/ref/`          — per-task written reference answers used by the judge
 - `runs/rep<N>/<cond>/<task>/` — stream.jsonl, answer.txt, commands.txt, judge_prompt.txt,
