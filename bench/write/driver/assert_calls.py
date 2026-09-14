@@ -186,7 +186,8 @@ def mutation_occurrences(calls, field):
 
 def check(task, calls, exp):
     if task == "T3":
-        reads = [c for c in calls if c.get("method") == "GET" and
+        reads = [c for c in calls if
+                 (c.get("method") == "GET" or "statusCheckRollup" in (c.get("graphql_fields") or [])) and
                  ("check-runs" in c.get("rest_path", "") or
                   "statusCheckRollup" in (c.get("graphql_fields") or [])) and ok(c)]
         payloads = [c.get("response") or c.get("response_body") or {} for c in reads]
@@ -195,7 +196,12 @@ def check(task, calls, exp):
         states = json.dumps(payloads + calls)
         if '"in_progress"' not in states or '"completed"' not in states:
             return "FAIL - did not observe both in-progress and completed check states"
-        if any(c.get("method") in ("POST", "PATCH", "DELETE") and ok(c)
+        if any(c.get("method") in ("PATCH", "DELETE") and ok(c)
+               or (c.get("method") == "POST" and c.get("path") != "/api/graphql" and ok(c))
+               or (c.get("method") == "POST" and c.get("path") == "/api/graphql" and
+                   any(f in (c.get("graphql_fields") or []) for f in
+                       ("addComment", "addPullRequestReviewThreadReply", "addPullRequestReviewComment",
+                        "resolveReviewThread", "unresolveReviewThread")) and ok(c))
                for c in calls if c.get("path") != "/__control/reset"):
             return "FAIL - made a write call"
         return "PASS"

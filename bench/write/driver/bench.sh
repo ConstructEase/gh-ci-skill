@@ -133,6 +133,7 @@ run_cell() {
   prepare_cell "$rep" "$cond" "$task" "$out" || return 0
 
   local target_line comment_id thread_id comment_node_id text expected_body
+  target_line=""; comment_id=""; thread_id=""; comment_node_id=""; text=""; expected_body=""
   if [ "$task" = T3 ]; then
     target_line="0\t\t\t\t"
   else
