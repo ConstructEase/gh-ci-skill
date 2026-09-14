@@ -13,8 +13,8 @@ case "$version" in
   1.2.3) commit=3be16034aacffaefa462a61d269d8224b9a158a4 ;;
   1.2.4) commit=d70569a2fdb5662a359e1200d91a1f28514d4a30 ;;
   1.3.0) commit=cf2528060c34c16c838e247780f748fe5ab13dc3 ;;
-  1.3.2) commit=9594571c ;;
-  *) echo "materialize-ghci: version must be 1.2.3, 1.2.4, or 1.3.0" >&2; exit 2 ;;
+  1.3.2) commit=9594571ccc717c36b3171488d246425073373662 ;;
+  *) echo "materialize-ghci: version must be 1.2.3, 1.2.4, 1.3.0, or 1.3.2" >&2; exit 2 ;;
 esac
 
 tag="v$version"

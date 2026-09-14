@@ -864,11 +864,12 @@ def _pull_node(d, checks=None):
         "comments": _connection([_issue_comment_node(d, c) for c in d["issue_comments"]]),
         "reviews": _connection([]),
         "reviewRequests": _connection([]),
-        "commits": _connection([]),
+        "commits": _connection([{"commit": {"statusCheckRollup":
+            {"contexts": [_check_node(c) for c in (checks or d.get("check_runs", []))]}}}]),
         "files": _connection([]),
         "labels": _connection([]),
         "assignees": _connection([]),
-        "statusCheckRollup": {"contexts": [_check_node(c) for c in (checks or d.get("check_runs", []))]},
+        "statusCheckRollup": None,
         "reviewThreads": _connection([_thread_node(d, t) for t in d["threads"]]),
     }
 
