@@ -36,14 +36,16 @@ pushed on any real repository during the read tier or the rerun.
 
 ### Method
 
-Five read-only tasks × three conditions × five repeats = **75 agent runs**, each
-followed by one LLM-judge call.
+**Read tier** — five read-only tasks × three conditions × five repeats = **75 agent
+runs**, each followed by one LLM-judge call.
 
-**Tasks** — T1 read the CI check status for a PR; T2 wait for a *named* check and
+**Read tasks** — T1 read the CI check status for a PR; T2 wait for a *named* check and
 report its conclusion; T4 read a failing Actions run's log and identify the cause;
-T5 check PR mergeability; T6 read a PR's conversation comments; T7 reply to a
-specific inline review comment inside its thread; T8 post a top-level PR conversation
-comment; T9 mark a specific review thread resolved without commenting.
+T5 check PR mergeability; T6 read a PR's conversation comments.
+
+**Write tasks** — T7 reply to a specific inline review comment inside its thread; T8
+post a top-level PR conversation comment; T9 mark a specific review thread resolved
+without commenting.
 
 **Conditions** — each run got a fresh temporary working directory whose *only*
 project instruction was that condition's file, with no other skills loaded and no
@@ -55,8 +57,8 @@ permission prompts:
 | `gh` | a minimal "you have the `gh` CLI, use it" note (189 B) | no skill; `gh-axi` removed from `PATH` |
 | gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
 
-**Fixtures** — existing, unmodified repository state. Nothing was created, commented
-on, resolved, or pushed during the read tier.
+**Read fixtures** — existing, unmodified repository state. Nothing was created,
+commented on, resolved, or pushed during the read tier.
 
 | Task | Fixture |
 |---|---|
@@ -168,9 +170,9 @@ the writes occurred.
 - **Payload size alone is misleading.** The number that matters is total input
   tokens across the whole session, because every extra turn re-reads the entire
   prior context from cache. A tool whose output is 6× smaller but costs one more
-  round-trip is not cheaper. That is why `cache_read` dominates every row above,
-  and why the ranking tracks API calls far more closely than it tracks payload
-  bytes.
+  round-trip is not cheaper. That is why `cache_read` dominates every row in the
+  detailed before table, and why the ranking tracks API calls far more closely than
+  it tracks payload bytes.
 - **Most of gh-ci 1.2.3's overhead here was the script-location probe.** Its
   `SKILL.md` told the agent to probe candidate paths for `ci.sh` before running
   anything; that cost a dedicated first turn in 24 of 25 gh-ci runs, on every
@@ -188,8 +190,9 @@ the writes occurred.
   piped or grepped the log rather than reading it whole, and Claude Code spills very
   large tool outputs to a file on its own — so gh-axi's 20,000-character log cap
   showed up as fewer turns, not as an avoided context blow-up.
-- **These numbers rank ergonomics on five read tasks under one agent harness.** They
-  do not rank the tools' capability surfaces, which are not interchangeable.
+- **These numbers rank ergonomics on five read tasks and three mocked write tasks
+  under one agent harness.** They do not rank the tools' capability surfaces, which
+  are not interchangeable.
 
 ### Write-side method history
 
