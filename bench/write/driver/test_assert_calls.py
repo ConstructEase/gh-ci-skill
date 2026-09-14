@@ -59,6 +59,12 @@ CASES = [
     ("T7", [gql(["addPullRequestReviewComment"], {},
                 arguments=[("addPullRequestReviewComment", {"input": {
                     "inReplyTo": "PRRC_target", "body": BODY}})])], "PASS"),
+    ("T7", [gql(["addPullRequestReviewThreadReply"], {}, arguments=[
+        ("addPullRequestReviewThreadReply", {"input": {
+            "pullRequestReviewThreadId": "PRRT_target", "body": BODY}}),
+        ("addPullRequestReviewThreadReply", {"input": {
+            "pullRequestReviewThreadId": "PRRT_target", "body": BODY}}),
+    ])], "FAIL"),
     # the failure an LLM judge cannot see
     ("T7", [rest(ISSUE, {"body": BODY})], "FAIL"),
     ("T7", [gql(["addComment"], {"input": {"subjectId": "PR_1", "body": BODY}})], "FAIL"),
@@ -97,6 +103,10 @@ CASES = [
     ("T8", [gql(["addComment"], {"subject": "PR_1", "text": BODY},
                 arguments=[("addComment", {"input": {
                     "subjectId": "PR_1", "body": BODY}})])], "PASS"),
+    ("T8", [gql(["addComment"], {}, arguments=[
+        ("addComment", {"input": {"subjectId": "PR_1", "body": BODY}}),
+        ("addComment", {"input": {"subjectId": "PR_1", "body": BODY}}),
+    ])], "FAIL"),
     ("T8", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": "no marker"})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": "MARK1 --repo o/r"})], "FAIL"),
@@ -118,6 +128,10 @@ CASES = [
     ("T9", [gql(["resolveReviewThread"], {},
                 arguments=[("resolveReviewThread", {"input": {
                     "threadId": "PRRT_target"}})])], "PASS"),
+    ("T9", [gql(["resolveReviewThread"], {}, arguments=[
+        ("resolveReviewThread", {"input": {"threadId": "PRRT_target"}}),
+        ("resolveReviewThread", {"input": {"threadId": "PRRT_target"}}),
+    ])], "FAIL"),
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_other"})], "FAIL"),
     # resolved then undid it
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"}),

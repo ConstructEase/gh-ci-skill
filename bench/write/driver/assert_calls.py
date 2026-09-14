@@ -103,29 +103,40 @@ def replies_endpoint_calls(calls, pr):
 
 def gql_reply_calls(calls):
     """GraphQL spellings of "reply into a review thread"."""
-    return (graphql(calls, "addPullRequestReviewThreadReply")
-            + graphql(calls, "addPullRequestReviewComment"))
+    return (mutation_occurrences(calls, "addPullRequestReviewThreadReply")
+            + mutation_occurrences(calls, "addPullRequestReviewComment"))
 
 
 def gql_comment_calls(calls):
-    return graphql(calls, "addComment")
+    return mutation_occurrences(calls, "addComment")
 
 
-def mutation_input(call, field):
-    recorded = call.get("graphql_arguments")
-    if recorded is not None:
-        match = next((item.get("arguments") for item in recorded
-                      if item.get("field") == field), {})
-        args = match if isinstance(match, dict) else {}
-        inp = args.get("input")
-        if isinstance(inp, dict):
-            return inp
-        return args
+def normalized_input(arguments):
+    args = arguments if isinstance(arguments, dict) else {}
+    inp = args.get("input")
+    if isinstance(inp, dict):
+        return inp
+    return args
+
+
+def legacy_mutation_input(call):
     variables = body_of(call).get("variables") or {}
     inp = variables.get("input")
     if isinstance(inp, dict):
         return inp
     return variables
+
+
+def mutation_occurrences(calls, field):
+    out = []
+    for call in graphql(calls, field):
+        recorded = call.get("graphql_arguments")
+        if recorded is None:
+            out.append((call, legacy_mutation_input(call)))
+            continue
+        out.extend((call, normalized_input(item.get("arguments")))
+                   for item in recorded if item.get("field") == field)
+    return out
 
 
 def check(task, calls, exp):
@@ -135,29 +146,30 @@ def check(task, calls, exp):
     issue_posts = rest_posts(calls, "/issues/%s/comments" % pr)
     gql_replies = gql_reply_calls(calls)
     gql_comments = gql_comment_calls(calls)
-    resolves = graphql(calls, "resolveReviewThread")
-    unresolves = graphql(calls, "unresolveReviewThread")
+    resolves = mutation_occurrences(calls, "resolveReviewThread")
+    unresolves = mutation_occurrences(calls, "unresolveReviewThread")
     comment_changes = comment_mutations(calls)
 
     if task == "T7":
         # exactly one accepted reply, into the target thread, carrying the marker
         endpoint_replies = replies_endpoint_calls(calls, pr)
-        replies = reply_posts + gql_replies + [c for c, _ in endpoint_replies]
-        if not replies:
+        reply_count = len(reply_posts) + len(gql_replies) + len(endpoint_replies)
+        if not reply_count:
             return "FAIL - no reply call was made"
         if issue_posts or gql_comments:
             return "FAIL - posted a top-level comment instead of/besides a thread reply"
-        if len(replies) > 1:
-            return "FAIL - made %d reply calls, expected 1" % len(replies)
-        call = replies[0]
-        body = body_of(call)
+        if reply_count > 1:
+            return "FAIL - made %d reply calls, expected 1" % reply_count
         if endpoint_replies:
-            _, target = endpoint_replies[0]
+            call, target = endpoint_replies[0]
+            body = body_of(call)
             if target != int(exp["comment_id"]):
                 return ("FAIL - replied to comment %s, expected %s"
                         % (target, exp["comment_id"]))
             text = body.get("body") or ""
-        elif call in reply_posts:
+        elif reply_posts:
+            call = reply_posts[0]
+            body = body_of(call)
             target = body.get("in_reply_to")
             if target is None:
                 return "FAIL - reply carried no in_reply_to, so it started a new thread"
@@ -168,11 +180,7 @@ def check(task, calls, exp):
                         % (target, exp["comment_id"]))
             text = body.get("body") or ""
         else:
-            if call in graphql(calls, "addPullRequestReviewThreadReply"):
-                field = "addPullRequestReviewThreadReply"
-            else:
-                field = "addPullRequestReviewComment"
-            inp = mutation_input(call, field)
+            _, inp = gql_replies[0]
             thread_id = inp.get("pullRequestReviewThreadId") or inp.get("inReplyTo")
             if thread_id not in (exp["thread_id"], exp.get("comment_node_id")):
                 return "FAIL - GraphQL reply targeted %r, expected the quoted thread" % (thread_id,)
@@ -186,19 +194,18 @@ def check(task, calls, exp):
         return "PASS"
 
     if task == "T8":
-        comments = issue_posts + gql_comments
-        if not comments:
+        comment_count = len(issue_posts) + len(gql_comments)
+        if not comment_count:
             return "FAIL - no top-level comment call was made"
         if reply_posts or gql_replies:
             return "FAIL - posted into a review thread instead of/besides the conversation"
-        if len(comments) > 1:
-            return "FAIL - made %d comment calls, expected 1" % len(comments)
-        call = comments[0]
-        body = body_of(call)
-        if call in issue_posts:
+        if comment_count > 1:
+            return "FAIL - made %d comment calls, expected 1" % comment_count
+        if issue_posts:
+            body = body_of(issue_posts[0])
             text = body.get("body") or ""
         else:
-            inp = mutation_input(call, "addComment")
+            _, inp = gql_comments[0]
             text = inp.get("body") or ""
         if text != expected_body:
             return "FAIL - comment body was %r, expected %r" % (text, expected_body)
@@ -214,8 +221,8 @@ def check(task, calls, exp):
         if len(resolves) != 1:
             return "FAIL - made %d resolve calls, expected 1" % len(resolves)
         targets = set()
-        for call in resolves:
-            tid = mutation_input(call, "resolveReviewThread").get("threadId")
+        for call, inp in resolves:
+            tid = inp.get("threadId")
             if tid is None:
                 # an inline literal mutation: read it out of the query text
                 query = body_of(call).get("query") or ""

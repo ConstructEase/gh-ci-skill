@@ -23,7 +23,7 @@ def post(url, payload, context):
         return json.load(response)
 
 
-def grade(task, call, expected, directory):
+def grade(task, call, expected, verdict, directory):
     calls_path = os.path.join(directory, "one-call.jsonl")
     expected_path = os.path.join(directory, "expected.json")
     with open(calls_path, "w") as fh:
@@ -33,7 +33,7 @@ def grade(task, call, expected, directory):
     result = subprocess.run(
         [sys.executable, GRADER, task, calls_path, expected_path],
         capture_output=True, text=True, check=True)
-    if result.stdout.strip() != "PASS":
+    if result.stdout.strip().split(" ", 1)[0] != verdict:
         raise AssertionError("%s: %s" % (task, result.stdout.strip()))
 
 
@@ -54,28 +54,31 @@ def main():
                 cafile=os.path.join(directory, "cert.pem"))
             url = "https://127.0.0.1:%s/api/graphql" % port
             scenarios = [
-                ("T7", {
+                ("T7", "PASS", {
                     "query": "mutation($threadId:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){comment{id}}}",
                     "variables": {"threadId": expected["thread_id"], "body": BODY},
                 }),
-                ("T8", {
+                ("T8", "PASS", {
                     "query": "mutation{addComment(input:{subjectId:\"PR_kwDOMOCKF1\",body:\"%s\"}){commentEdge{node{id}}}}" % BODY,
                 }),
-                ("T9", {
+                ("T9", "PASS", {
                     "query": "mutation($threadId:ID!){resolveReviewThread(input:{threadId:$threadId}){thread{id}}}",
                     "variables": {"threadId": expected["thread_id"]},
                 }),
+                ("T8", "FAIL", {
+                    "query": "mutation{first:addComment(input:{subjectId:\"PR_kwDOMOCKF1\",body:\"%s\"}){commentEdge{node{id}}}second:addComment(input:{subjectId:\"PR_kwDOMOCKF1\",body:\"%s\"}){commentEdge{node{id}}}}" % (BODY, BODY),
+                }),
             ]
-            for task, payload in scenarios:
+            for task, verdict, payload in scenarios:
                 post(url, payload, context)
                 with open(os.path.join(directory, "calls.jsonl")) as fh:
                     call = json.loads(fh.readlines()[-1])
                 if not call.get("graphql_arguments"):
                     raise AssertionError("%s: resolved arguments were not recorded" % task)
-                grade(task, call, expected, directory)
+                grade(task, call, expected, verdict, directory)
         finally:
             subprocess.run(["bash", FORGE, "stop", directory], check=True)
-    print("3 resolved GraphQL argument scenarios passed")
+    print("4 resolved GraphQL argument scenarios passed")
     return 0
 
 
