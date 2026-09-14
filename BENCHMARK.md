@@ -68,8 +68,11 @@ before starting a benchmark if the variable is unset or a required key is missin
 The 1.3.2 named-check follow-up contains 15 T3 cells and a corrected 15-cell
 gh-axi T7–T9 rerun under `bench/write/results/1.3.2-ghaxi-rerun/`. T3 judge
 grading was re-run with untruncated commands and compact call-log evidence;
-the original judge files are retained. The corrected rerun isolates the
-`GH_REPO` environment issue while supplying `REPO_NWO` to stand in for the
+per-run transcripts, call logs, and original and regraded judge outputs are
+retained privately by the maintainer outside this repository because they embed
+the private answer keys. For this follow-up, the repository retains only the result
+TSVs, aggregates, and manifest. The corrected rerun isolates the `GH_REPO`
+environment issue while supplying `REPO_NWO` to stand in for the
 repository identity from a real clone; gh-axi may still retry when given an
 explicit `--repo`/`-R` to `api`. The read tier was unaffected.
 

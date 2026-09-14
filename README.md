@@ -233,7 +233,10 @@ rejects an explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results
 were unaffected. The retained gh-axi T3 runs never requested the single-check
 REST route and did receive nested rollup data, so they did not need rerunning.
 T3 judge verdicts were rechecked with fuller command and call-log evidence;
-original judge outputs remain retained.
+per-run transcripts, call logs, and original and regraded judge outputs are
+retained privately by the maintainer outside this repository because they embed
+the private answer keys. For this follow-up, the repository retains only the result
+TSVs, aggregates, and manifest.
 
 The write-side half uses the local recording mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
