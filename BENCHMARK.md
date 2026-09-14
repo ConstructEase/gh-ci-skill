@@ -48,31 +48,44 @@ tokens, and records all requests. Its containment depends on those environment
 routes. The prior nine-cell real-GitHub validation on 1.2.4 agreed with the mock on
 eight cells, but is historical context only and is not an executable harness mode.
 
+## Answer keys
+
+The reference answer keys are held privately by the maintainer because they contain
+content from private ConstructEase repositories. They are intentionally excluded
+from this repository, so outside readers cannot rerun the LLM judge without access
+to those keys. Set `BENCH_ANSWER_KEYS` to an operator-supplied directory containing
+`read/T<N>.txt` and `write/T<N>.txt` files for the tasks being run. Both drivers stop
+before starting a benchmark if the variable is unset or a required key is missing.
+
 ## Reproduction
 
 Prerequisites are Bash, git, `gh`, `jq`, Python 3, Claude Code, and the development
 requirements listed by `tests/mock-forge/README.md`. From the repository root:
 
 ```bash
-BENCH_RESULTS=bench/read/work/results.1.2.3.tsv BENCH_RUNROOT=bench/read/runs/1.2.3 \
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_RESULTS=bench/read/work/results.1.2.3.tsv BENCH_RUNROOT=bench/read/runs/1.2.3 \
   bench/read/driver/bench.sh --ghci 1.2.3 1 5
 python3 bench/read/driver/aggregate.py bench/read/work/results.1.2.3.tsv \
   bench/read/work/aggregate.1.2.3.json
 python3 bench/mktable.py bench/read/work/aggregate.1.2.3.json
 
-BENCH_RESULTS=bench/read/work/results.1.3.0.tsv BENCH_RUNROOT=bench/read/runs/1.3.0 \
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_RESULTS=bench/read/work/results.1.3.0.tsv BENCH_RUNROOT=bench/read/runs/1.3.0 \
   bench/read/driver/bench.sh --ghci 1.3.0 1 5
 python3 bench/read/driver/aggregate.py bench/read/work/results.1.3.0.tsv \
   bench/read/work/aggregate.1.3.0.json
 python3 bench/mktable.py bench/read/work/aggregate.1.3.0.json
 
-BENCH_RESULTS=bench/write/work/results.1.2.4.tsv BENCH_RUNROOT=bench/write/runs/1.2.4 \
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_RESULTS=bench/write/work/results.1.2.4.tsv BENCH_RUNROOT=bench/write/runs/1.2.4 \
   bench/write/driver/bench.sh --ghci 1.2.4 1 5
 python3 bench/write/driver/aggregate.py bench/write/work/results.1.2.4.tsv \
   bench/write/work/aggregate.1.2.4.json
 python3 bench/mktable.py bench/write/work/aggregate.1.2.4.json
 
-BENCH_RESULTS=bench/write/work/results.1.3.0.tsv BENCH_RUNROOT=bench/write/runs/1.3.0 \
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_RESULTS=bench/write/work/results.1.3.0.tsv BENCH_RUNROOT=bench/write/runs/1.3.0 \
   bench/write/driver/bench.sh --ghci 1.3.0 1 5
 python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.0.tsv \
   bench/write/work/aggregate.1.3.0.json

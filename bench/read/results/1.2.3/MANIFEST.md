@@ -9,7 +9,7 @@ Run date: 2026-09-11. The retained harness was subsequently committed under
 - `bench/mktable.py`    — renders `aggregate.json` as the README markdown tables
 - `bench/conditions/`   — the shared plain-gh and gh-axi condition instruction files; gh-ci is materialized from its pinned commit
 - `tasks/tasks.tsv`     — task id, fixture repo, prompt
-- `tasks/ref/`          — per-task written reference answers used by the judge
+- `$BENCH_ANSWER_KEYS/read/` — private per-task reference answers used by the judge
 - `results.tsv`         — one row per run
 - `aggregate.json`      — generated summary used to render the retained table
 

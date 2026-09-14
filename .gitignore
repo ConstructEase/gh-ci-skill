@@ -10,3 +10,4 @@ bench/write/runs
 bench/write/pathshim
 bench/write/payload
 bench/**/forge-run/
+bench/*/tasks/ref/

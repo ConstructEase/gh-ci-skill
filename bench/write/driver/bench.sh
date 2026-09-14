@@ -33,6 +33,26 @@ while [ "$#" -gt 0 ]; do
     *) break ;;
   esac
 done
+
+REP_START="${1:-1}"; REP_END="${2:-1}"
+TASK_FILTER="${3:-}"; COND_FILTER="${4:-}"
+
+if [ -z "${BENCH_ANSWER_KEYS:-}" ]; then
+  echo "bench: BENCH_ANSWER_KEYS must point to the private answer-key directory" >&2
+  exit 2
+fi
+ANSWER_KEYS="$(cd "$BENCH_ANSWER_KEYS" 2>/dev/null && pwd)" || {
+  echo "bench: BENCH_ANSWER_KEYS directory not found: $BENCH_ANSWER_KEYS" >&2
+  exit 2
+}
+while IFS=$'\t' read -r task _; do
+  [ -n "$TASK_FILTER" ] && [ "$task" != "$TASK_FILTER" ] && continue
+  [ -s "$ANSWER_KEYS/write/$task.txt" ] || {
+    echo "bench: answer key missing or empty: $ANSWER_KEYS/write/$task.txt" >&2
+    exit 2
+  }
+done < "$D/tasks/tasks.tsv"
+
 bash "$REPO_ROOT/bench/materialize-ghci.sh" "$REPO_ROOT" "$D/payload" "$GHCI_VERSION" || exit 1
 PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
 NO_GHAXI_PATH=""
@@ -61,9 +81,6 @@ case "$RESULTS" in /*) ;; *) RESULTS="$CALLER_PWD/$RESULTS" ;; esac
 case "$RUNROOT" in /*) ;; *) RUNROOT="$CALLER_PWD/$RUNROOT" ;; esac
 case "$TARGETS" in /*) ;; *) TARGETS="$CALLER_PWD/$TARGETS" ;; esac
 mkdir -p "$(dirname "$RESULTS")" "$RUNROOT"
-
-REP_START="${1:-1}"; REP_END="${2:-1}"
-TASK_FILTER="${3:-}"; COND_FILTER="${4:-}"
 
 CONDS=(C-ghci C-gh C-ghaxi)
 
@@ -231,7 +248,7 @@ JSON
   {
     printf 'You are grading one run of a benchmark. Decide PASS or FAIL.\n\n'
     printf '=== TASK GIVEN TO THE AGENT ===\n%s\n\n' "$prompt"
-    printf '=== REFERENCE ANSWER (ground truth) ===\n'; cat "$D/tasks/ref/$task.txt"
+    printf '=== REFERENCE ANSWER (ground truth) ===\n'; cat "$ANSWER_KEYS/write/$task.txt"
     printf '\n=== COMMANDS THE AGENT RAN ===\n'; cat "$out/commands.txt"
     printf '\n=== AGENT FINAL ANSWER ===\n'; head -c 6000 "$out/answer.txt"
     printf '\n\n=== GRADING RULES ===\n'
