@@ -1,2 +1,9 @@
 __pycache__/
 *.pyc
+
+bench/read/work
+bench/read/runs
+bench/read/pathshim
+bench/write/work
+bench/write/runs
+bench/write/pathshim

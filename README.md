@@ -208,6 +208,9 @@ without creating anything.
 
 ## Development
 
+The benchmark harness, methodology, and retained results are documented in
+[BENCHMARK.md](BENCHMARK.md) and `bench/`.
+
 Tests use [bats-core](https://github.com/bats-core/bats-core):
 
 ```bash
