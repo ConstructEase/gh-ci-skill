@@ -212,7 +212,7 @@ are medians.
 | Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
 |---|---|---|---|---|---|---|---|---|---|---|
 | T3 | gh-ci | call 5/5; judge 5/5 | 128,140 (83,380–129,283) | 109,529 | 18,605 | 6 | 822 | 74.0 | 3 | 2 |
-| T3 | `gh` | call 5/5; judge 4/5 | 152,906 (152,720–152,965) | 139,219 | 13,679 | 8 | 828 | 71.2 | 4 | 3 |
+| T3 | `gh` | call 4/5; judge 4/5 | 152,906 (152,720–152,965) | 139,219 | 13,679 | 8 | 828 | 71.2 | 4 | 3 |
 | T3 | gh-axi | call 1/5; judge 1/5 | 342,988 (299,454–551,742) | 324,725 | 18,547 | 16 | 2,620 | 58.5 | 8 | 7 |
 
 gh-ci used one check-wait command, while plain `gh` polled in the foreground.

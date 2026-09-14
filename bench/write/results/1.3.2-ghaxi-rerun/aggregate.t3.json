@@ -68,8 +68,8 @@
       "n": 5,
       "pass": 4,
       "success_rate": 0.8,
-      "call_pass": 5,
-      "call_success_rate": 1.0,
+      "call_pass": 4,
+      "call_success_rate": 0.8,
       "wall_ms": {
         "med": 71190.0,
         "iqr": [
@@ -215,8 +215,8 @@
       "n": 5,
       "pass": 4,
       "success_rate": 0.8,
-      "call_pass": 5,
-      "call_success_rate": 1.0,
+      "call_pass": 4,
+      "call_success_rate": 0.8,
       "total_in_med": 152906.0,
       "total_in_iqr": [
         152720.0,
