@@ -1,0 +1,634 @@
+{
+  "cells": {
+    "T7|C-ghci": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 14122.0,
+        "iqr": [
+          13758.0,
+          16911.0
+        ]
+      },
+      "api_calls": {
+        "med": 4.0,
+        "iqr": [
+          4.0,
+          5.0
+        ]
+      },
+      "tool_calls": {
+        "med": 3.0,
+        "iqr": [
+          3.0,
+          4.0
+        ]
+      },
+      "in_tok": {
+        "med": 8.0,
+        "iqr": [
+          8.0,
+          10.0
+        ]
+      },
+      "cache_read": {
+        "med": 149516.0,
+        "iqr": [
+          139870.0,
+          176937.0
+        ]
+      },
+      "cache_write": {
+        "med": 15185.0,
+        "iqr": [
+          15168.0,
+          15314.0
+        ]
+      },
+      "out_tok": {
+        "med": 1144.0,
+        "iqr": [
+          1012.0,
+          1147.0
+        ]
+      },
+      "total_in": {
+        "med": 155046.0,
+        "iqr": [
+          155030.0,
+          192261.0
+        ]
+      },
+      "usd": 0.6121538
+    },
+    "T7|C-gh": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 7793.0,
+        "iqr": [
+          7670.0,
+          8770.0
+        ]
+      },
+      "api_calls": {
+        "med": 3.0,
+        "iqr": [
+          3.0,
+          3.0
+        ]
+      },
+      "tool_calls": {
+        "med": 2.0,
+        "iqr": [
+          2.0,
+          2.0
+        ]
+      },
+      "in_tok": {
+        "med": 6.0,
+        "iqr": [
+          6.0,
+          6.0
+        ]
+      },
+      "cache_read": {
+        "med": 95754.0,
+        "iqr": [
+          95625.0,
+          96070.0
+        ]
+      },
+      "cache_write": {
+        "med": 9344.0,
+        "iqr": [
+          9276.0,
+          9396.0
+        ]
+      },
+      "out_tok": {
+        "med": 457.0,
+        "iqr": [
+          451.0,
+          567.0
+        ]
+      },
+      "total_in": {
+        "med": 105036.0,
+        "iqr": [
+          105027.0,
+          105775.0
+        ]
+      },
+      "usd": 0.3982488
+    },
+    "T7|C-ghaxi": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 81453.0,
+        "iqr": [
+          44205.0,
+          86353.0
+        ]
+      },
+      "api_calls": {
+        "med": 18.0,
+        "iqr": [
+          17.0,
+          22.0
+        ]
+      },
+      "tool_calls": {
+        "med": 17.0,
+        "iqr": [
+          16.0,
+          21.0
+        ]
+      },
+      "in_tok": {
+        "med": 36.0,
+        "iqr": [
+          34.0,
+          44.0
+        ]
+      },
+      "cache_read": {
+        "med": 740074.0,
+        "iqr": [
+          681992.0,
+          923345.0
+        ]
+      },
+      "cache_write": {
+        "med": 20741.0,
+        "iqr": [
+          20564.0,
+          26150.0
+        ]
+      },
+      "out_tok": {
+        "med": 6102.0,
+        "iqr": [
+          3032.0,
+          6663.0
+        ]
+      },
+      "total_in": {
+        "med": 766745.0,
+        "iqr": [
+          702767.0,
+          949539.0
+        ]
+      },
+      "usd": 1.6064536000000003
+    },
+    "T8|C-ghci": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 4,
+      "call_success_rate": 0.8,
+      "wall_ms": {
+        "med": 12309.0,
+        "iqr": [
+          9456.0,
+          12884.0
+        ]
+      },
+      "api_calls": {
+        "med": 4.0,
+        "iqr": [
+          3.0,
+          4.0
+        ]
+      },
+      "tool_calls": {
+        "med": 3.0,
+        "iqr": [
+          2.0,
+          3.0
+        ]
+      },
+      "in_tok": {
+        "med": 8.0,
+        "iqr": [
+          6.0,
+          8.0
+        ]
+      },
+      "cache_read": {
+        "med": 135775.0,
+        "iqr": [
+          98941.0,
+          136768.0
+        ]
+      },
+      "cache_write": {
+        "med": 10943.0,
+        "iqr": [
+          10761.0,
+          11249.0
+        ]
+      },
+      "out_tok": {
+        "med": 906.0,
+        "iqr": [
+          777.0,
+          1163.0
+        ]
+      },
+      "total_in": {
+        "med": 147032.0,
+        "iqr": [
+          109890.0,
+          148784.0
+        ]
+      },
+      "usd": 0.5187204
+    },
+    "T8|C-gh": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 4929.0,
+        "iqr": [
+          4818.0,
+          4933.0
+        ]
+      },
+      "api_calls": {
+        "med": 2.0,
+        "iqr": [
+          2.0,
+          2.0
+        ]
+      },
+      "tool_calls": {
+        "med": 1.0,
+        "iqr": [
+          1.0,
+          1.0
+        ]
+      },
+      "in_tok": {
+        "med": 4.0,
+        "iqr": [
+          4.0,
+          4.0
+        ]
+      },
+      "cache_read": {
+        "med": 60416.0,
+        "iqr": [
+          60416.0,
+          60416.0
+        ]
+      },
+      "cache_write": {
+        "med": 8247.0,
+        "iqr": [
+          8233.0,
+          8248.0
+        ]
+      },
+      "out_tok": {
+        "med": 265.0,
+        "iqr": [
+          262.0,
+          265.0
+        ]
+      },
+      "total_in": {
+        "med": 68667.0,
+        "iqr": [
+          68653.0,
+          68668.0
+        ]
+      },
+      "usd": 0.31771340000000003
+    },
+    "T8|C-ghaxi": {
+      "n": 5,
+      "pass": 1,
+      "success_rate": 0.2,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 29016.0,
+        "iqr": [
+          8351.0,
+          36439.0
+        ]
+      },
+      "api_calls": {
+        "med": 10.0,
+        "iqr": [
+          3.0,
+          11.0
+        ]
+      },
+      "tool_calls": {
+        "med": 9.0,
+        "iqr": [
+          2.0,
+          10.0
+        ]
+      },
+      "in_tok": {
+        "med": 20.0,
+        "iqr": [
+          6.0,
+          22.0
+        ]
+      },
+      "cache_read": {
+        "med": 372597.0,
+        "iqr": [
+          100834.0,
+          428791.0
+        ]
+      },
+      "cache_write": {
+        "med": 11431.0,
+        "iqr": [
+          11428.0,
+          14440.0
+        ]
+      },
+      "out_tok": {
+        "med": 1931.0,
+        "iqr": [
+          509.0,
+          2534.0
+        ]
+      },
+      "total_in": {
+        "med": 387057.0,
+        "iqr": [
+          112271.0,
+          433839.0
+        ]
+      },
+      "usd": 0.7321506
+    },
+    "T9|C-ghci": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 12656.0,
+        "iqr": [
+          11757.0,
+          16357.0
+        ]
+      },
+      "api_calls": {
+        "med": 4.0,
+        "iqr": [
+          4.0,
+          6.0
+        ]
+      },
+      "tool_calls": {
+        "med": 3.0,
+        "iqr": [
+          3.0,
+          5.0
+        ]
+      },
+      "in_tok": {
+        "med": 8.0,
+        "iqr": [
+          8.0,
+          12.0
+        ]
+      },
+      "cache_read": {
+        "med": 148999.0,
+        "iqr": [
+          139578.0,
+          213925.0
+        ]
+      },
+      "cache_write": {
+        "med": 14755.0,
+        "iqr": [
+          14559.0,
+          15074.0
+        ]
+      },
+      "out_tok": {
+        "med": 1036.0,
+        "iqr": [
+          864.0,
+          1216.0
+        ]
+      },
+      "total_in": {
+        "med": 154341.0,
+        "iqr": [
+          154053.0,
+          229011.0
+        ]
+      },
+      "usd": 0.6065534
+    },
+    "T9|C-gh": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 8141.0,
+        "iqr": [
+          7896.0,
+          8227.0
+        ]
+      },
+      "api_calls": {
+        "med": 3.0,
+        "iqr": [
+          3.0,
+          3.0
+        ]
+      },
+      "tool_calls": {
+        "med": 2.0,
+        "iqr": [
+          2.0,
+          2.0
+        ]
+      },
+      "in_tok": {
+        "med": 6.0,
+        "iqr": [
+          6.0,
+          6.0
+        ]
+      },
+      "cache_read": {
+        "med": 96582.0,
+        "iqr": [
+          96526.0,
+          96896.0
+        ]
+      },
+      "cache_write": {
+        "med": 10090.0,
+        "iqr": [
+          9962.0,
+          10102.0
+        ]
+      },
+      "out_tok": {
+        "med": 582.0,
+        "iqr": [
+          562.0,
+          582.0
+        ]
+      },
+      "total_in": {
+        "med": 106690.0,
+        "iqr": [
+          106622.0,
+          107271.0
+        ]
+      },
+      "usd": 0.4114386
+    },
+    "T9|C-ghaxi": {
+      "n": 5,
+      "pass": 5,
+      "success_rate": 1.0,
+      "call_pass": 5,
+      "call_success_rate": 1.0,
+      "wall_ms": {
+        "med": 57082.0,
+        "iqr": [
+          49146.0,
+          77339.0
+        ]
+      },
+      "api_calls": {
+        "med": 16.0,
+        "iqr": [
+          15.0,
+          19.0
+        ]
+      },
+      "tool_calls": {
+        "med": 15.0,
+        "iqr": [
+          14.0,
+          18.0
+        ]
+      },
+      "in_tok": {
+        "med": 32.0,
+        "iqr": [
+          30.0,
+          38.0
+        ]
+      },
+      "cache_read": {
+        "med": 642055.0,
+        "iqr": [
+          589996.0,
+          791499.0
+        ]
+      },
+      "cache_write": {
+        "med": 19347.0,
+        "iqr": [
+          18076.0,
+          26484.0
+        ]
+      },
+      "out_tok": {
+        "med": 4354.0,
+        "iqr": [
+          3540.0,
+          6088.0
+        ]
+      },
+      "total_in": {
+        "med": 650288.0,
+        "iqr": [
+          609373.0,
+          818021.0
+        ]
+      },
+      "usd": 1.5959748
+    }
+  },
+  "conditions": {
+    "C-ghci": {
+      "n": 15,
+      "pass": 15,
+      "success_rate": 1.0,
+      "call_pass": 14,
+      "call_success_rate": 0.9333333333333333,
+      "total_in_med": 154965.0,
+      "total_in_iqr": [
+        151392.5,
+        193953.5
+      ],
+      "wall_ms_med": 13025.0,
+      "api_calls_med": 4.0,
+      "tool_calls_med": 3.0,
+      "out_med": 1036.0,
+      "usd": 1.7374276
+    },
+    "C-gh": {
+      "n": 15,
+      "pass": 15,
+      "success_rate": 1.0,
+      "call_pass": 15,
+      "call_success_rate": 1.0,
+      "total_in_med": 105036.0,
+      "total_in_iqr": [
+        68751.0,
+        106510.0
+      ],
+      "wall_ms_med": 7778.0,
+      "api_calls_med": 3.0,
+      "tool_calls_med": 2.0,
+      "out_med": 457.0,
+      "usd": 1.1274008
+    },
+    "C-ghaxi": {
+      "n": 15,
+      "pass": 11,
+      "success_rate": 0.7333333333333333,
+      "call_pass": 15,
+      "call_success_rate": 1.0,
+      "total_in_med": 609373.0,
+      "total_in_iqr": [
+        471985.5,
+        792383.0
+      ],
+      "wall_ms_med": 44684.0,
+      "api_calls_med": 15.0,
+      "tool_calls_med": 14.0,
+      "out_med": 3489.0,
+      "usd": 3.9345790000000003
+    }
+  },
+  "runs": 45
+}

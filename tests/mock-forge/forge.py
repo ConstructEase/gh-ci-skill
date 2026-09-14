@@ -438,12 +438,24 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         # The operation NAME is whatever the client called it ("CommentCreate"),
         # so it is useless for identifying what was done. The top-level FIELDS
         # are the mutation itself ("addComment"), which is what a grader needs.
+        flat_fields = gql._flatten(selections, fragments)
+        mutation_fields = []
         if getattr(self, "_entry", None) is not None:
             self._entry["graphql_fields"] = sorted(
-                {f["name"] for f in gql._flatten(selections, fragments)})
+                {f["name"] for f in flat_fields})
+            if operation_type == "mutation":
+                mutation_fields = [
+                    field for field in flat_fields
+                    if field["name"] != "__typename"
+                ]
+                self._entry["graphql_arguments"] = [
+                    {"field": field["name"],
+                     "arguments": gql.resolve_args(field["args"], variables)}
+                    for field in mutation_fields
+                ]
         errors = []
         universe = self._universe(errors, operation_type)
-        for field in gql._flatten(selections, fragments):
+        for field in flat_fields:
             if field["name"] != "__typename" and field["name"] not in universe:
                 errors.append("Field '%s' doesn't exist on type '%s'" %
                               (field["name"], operation_type.capitalize()))
@@ -451,6 +463,10 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             self._graphql_errors(None, errors)
             return
         data = gql.project(selections, universe, fragments, variables)
+        if mutation_fields:
+            for field, recorded in zip(
+                    mutation_fields, self._entry["graphql_arguments"]):
+                recorded["succeeded"] = data.get(field["alias"]) is not None
         if errors:
             self._graphql_errors(data if any(data.values()) else None, errors)
             return
