@@ -130,67 +130,67 @@
     },
     "T3|C-ghaxi": {
       "n": 5,
-      "pass": 2,
-      "success_rate": 0.4,
-      "call_pass": 4,
-      "call_success_rate": 0.8,
+      "pass": 1,
+      "success_rate": 0.2,
+      "call_pass": 1,
+      "call_success_rate": 0.2,
       "wall_ms": {
-        "med": 240447.0,
+        "med": 58541.0,
         "iqr": [
-          75375.0,
-          240525.0
+          36770.0,
+          60755.0
         ]
       },
       "api_calls": {
-        "med": 7.0,
+        "med": 8.0,
         "iqr": [
           7.0,
-          8.0
+          12.0
         ]
       },
       "tool_calls": {
         "med": 7.0,
         "iqr": [
-          7.0,
-          7.0
+          6.0,
+          11.0
         ]
       },
       "in_tok": {
-        "med": 14.0,
+        "med": 16.0,
         "iqr": [
-          6.0,
-          14.0
+          14.0,
+          24.0
         ]
       },
       "cache_read": {
-        "med": 276469.0,
+        "med": 324725.0,
         "iqr": [
-          109024.0,
-          277158.0
+          280893.0,
+          527580.0
         ]
       },
       "cache_write": {
-        "med": 17117.0,
+        "med": 18547.0,
         "iqr": [
-          16947.0,
-          17393.0
+          18247.0,
+          23227.0
         ]
       },
       "out_tok": {
-        "med": 261.0,
+        "med": 2620.0,
         "iqr": [
-          49.0,
-          1158.0
+          1919.0,
+          3415.0
         ]
       },
       "total_in": {
-        "med": 293600.0,
+        "med": 342988.0,
         "iqr": [
-          125977.0,
-          294565.0
+          299454.0,
+          551742.0
         ]
       },
-      "usd": 0.6051524000000001
+      "usd": 1.0713004
     }
   },
   "conditions": {
@@ -230,20 +230,20 @@
     },
     "C-ghaxi": {
       "n": 5,
-      "pass": 2,
-      "success_rate": 0.4,
-      "call_pass": 4,
-      "call_success_rate": 0.8,
-      "total_in_med": 293600.0,
+      "pass": 1,
+      "success_rate": 0.2,
+      "call_pass": 1,
+      "call_success_rate": 0.2,
+      "total_in_med": 342988.0,
       "total_in_iqr": [
-        125977.0,
-        294565.0
+        299454.0,
+        551742.0
       ],
-      "wall_ms_med": 240447.0,
-      "api_calls_med": 7.0,
+      "wall_ms_med": 58541.0,
+      "api_calls_med": 8.0,
       "tool_calls_med": 7.0,
-      "out_med": 261.0,
-      "usd": 0.6051524000000001
+      "out_med": 2620.0,
+      "usd": 1.0713004
     }
   },
   "runs": 15
