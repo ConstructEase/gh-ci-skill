@@ -36,6 +36,11 @@ def load(path):
     return out
 
 
+def http_ok(call):
+    status = call.get("status")
+    return status is not None and 200 <= int(status) < 300
+
+
 def ok(call):
     """Only a call GitHub accepted counts as a write the agent made.
 
@@ -43,10 +48,7 @@ def ok(call):
     try another spelling. Grading every attempt would fail an agent that
     recovered, and would reward one whose successful call was its second.
     """
-    status = call.get("status")
-    if status is None or not (200 <= int(status) < 300):
-        return False
-    return not call.get("graphql_errors")
+    return http_ok(call) and not call.get("graphql_errors")
 
 
 def body_of(call):
@@ -72,7 +74,7 @@ def graphql(calls, field):
     """
     out = []
     for c in calls:
-        if not ok(c):
+        if not http_ok(c):
             continue
         fields = c.get("graphql_fields")
         if fields is not None:
@@ -169,10 +171,16 @@ def mutation_occurrences(calls, field):
     for call in graphql(calls, field):
         recorded = call.get("graphql_arguments")
         if recorded is None:
-            out.extend(legacy_mutation_occurrences(call, field))
+            if ok(call):
+                out.extend(legacy_mutation_occurrences(call, field))
             continue
-        out.extend((call, normalized_input(item.get("arguments")))
-                   for item in recorded if item.get("field") == field)
+        out.extend(
+            (call, normalized_input(item.get("arguments")))
+            for item in recorded
+            if item.get("field") == field
+            and (item.get("succeeded") is True
+                 or ("succeeded" not in item and ok(call)))
+        )
     return out
 
 

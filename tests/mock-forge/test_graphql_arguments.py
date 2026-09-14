@@ -23,11 +23,12 @@ def post(url, payload, context):
         return json.load(response)
 
 
-def grade(task, call, expected, verdict, directory):
+def grade(task, calls, expected, verdict, directory):
     calls_path = os.path.join(directory, "one-call.jsonl")
     expected_path = os.path.join(directory, "expected.json")
     with open(calls_path, "w") as fh:
-        fh.write(json.dumps(call) + "\n")
+        for call in calls:
+            fh.write(json.dumps(call) + "\n")
     with open(expected_path, "w") as fh:
         json.dump(expected, fh)
     result = subprocess.run(
@@ -75,10 +76,27 @@ def main():
                     call = json.loads(fh.readlines()[-1])
                 if not call.get("graphql_arguments"):
                     raise AssertionError("%s: resolved arguments were not recorded" % task)
-                grade(task, call, expected, verdict, directory)
+                grade(task, [call], expected, verdict, directory)
+
+            post(url.replace("/api/graphql", "/api/v3/repos/ConstructEase/gh-ci-bench-fixture/issues/1/comments"),
+                 {"body": BODY}, context)
+            post(url, {
+                "query": "mutation($threadId:ID!){good:resolveReviewThread(input:{threadId:$threadId}){thread{id}}bad:addComment(input:{subjectId:\"PR_kwDOMOCKF1\"}){commentEdge{node{id}}}}",
+                "variables": {"threadId": expected["thread_id"]},
+            }, context)
+            with open(os.path.join(directory, "calls.jsonl")) as fh:
+                calls = [json.loads(line) for line in fh]
+            partial = calls[-1]
+            if not partial.get("graphql_errors"):
+                raise AssertionError("partial GraphQL failure was not recorded")
+            successes = [item.get("succeeded")
+                         for item in partial.get("graphql_arguments", [])]
+            if successes != [True, False]:
+                raise AssertionError("unexpected mutation outcomes: %r" % successes)
+            grade("T8", calls[-2:], expected, "FAIL", directory)
         finally:
             subprocess.run(["bash", FORGE, "stop", directory], check=True)
-    print("4 resolved GraphQL argument scenarios passed")
+    print("5 resolved GraphQL argument scenarios passed")
     return 0
 
 
