@@ -60,6 +60,13 @@ before starting a benchmark if the variable is unset or a required key is missin
 
 ## Reproduction
 
+The 1.3.2 named-check follow-up contains 15 T3 cells and a corrected 15-cell
+gh-axi T7–T9 rerun under `bench/write/results/1.3.2-ghaxi-rerun/`. T3 judge
+grading was re-run with untruncated commands and compact call-log evidence;
+the original judge files are retained. The corrected rerun isolates the
+GH_REPO/REPO_NWO environment issue; gh-axi may still retry when given an
+explicit `--repo`/`-R` to `api`. The read tier was unaffected.
+
 T3 uses a local in-flight check: `scan_ruby` starts `in_progress` and flips to
 `completed`/`failure` after `FORGE_CHECK_FLIP_SECONDS` (default 60) from its
 first observation after reset. `gh pr checks --watch` and `gh run watch` wait on

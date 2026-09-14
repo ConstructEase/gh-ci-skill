@@ -200,6 +200,27 @@ the writes occurred.
 
 ### Write-side method history
 
+#### Named-check wait follow-up (1.3.2)
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T3 | gh-ci | 4/5 | 529,640 (471,813–1,072,460) | — | — | — | 3,604 | 109.8 | 11 | 10 |
+| T3 | `gh` | 5/5 | 153,307 (153,254–153,348) | — | — | — | 846 | 73.3 | 4 | 3 |
+| T3 | gh-axi | 2/5 | 301,613 (295,338–342,072) | — | — | — | 2,026 | 72.1 | 7 | 6 |
+
+T3 shows the named-check wait is observable: gh-ci and gh-axi made repeated
+polls against the in-flight check, while wall time is dominated by the 60-second
+flip. The gh-axi T7–T9 corrected rerun is retained in
+`bench/write/results/1.3.2-ghaxi-rerun/`; its call assertions passed 15/15.
+The rerun also confirms `gh pr checks --watch` and `gh run watch` are valid
+all-checks waits, not named-check waits.
+
+Corrections: the original 1.3.0 gh-axi rows remain unchanged; the corrected
+gh-axi rows use the mock without GH_REPO/REPO_NWO. gh-axi still rejects an
+explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results were
+unaffected. T3 judge verdicts were rechecked with fuller command and call-log
+evidence; original judge outputs remain retained.
+
 The write-side half uses the local recording mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
 in PR #15, reset for each cell and graded by the recorded HTTP call plus the LLM
