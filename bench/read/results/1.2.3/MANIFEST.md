@@ -1,6 +1,7 @@
 # gh-ci benchmark — read-only half — run artifacts
 
-Run date: 2026-09-11. Repo change delivered: `README.md` "Benchmark results" only.
+Run date: 2026-09-11. The retained harness was subsequently committed under
+`bench/` with the rerun.
 
 ## Layout
 - `driver/bench.sh`     — the driver (`claude -p --output-format stream-json` per cell + LLM judge)
@@ -9,11 +10,11 @@ Run date: 2026-09-11. Repo change delivered: `README.md` "Benchmark results" onl
 - `bench/conditions/`   — the shared plain-gh and gh-axi condition instruction files; gh-ci is materialized from its pinned commit
 - `tasks/tasks.tsv`     — task id, fixture repo, prompt
 - `tasks/ref/`          — per-task written reference answers used by the judge
-- `runs/rep<N>/<cond>/<task>/` — stream.jsonl, answer.txt, commands.txt, judge_prompt.txt,
-                                 judge_stream.jsonl, judge.txt, stderr.txt
 - `results.tsv`         — one row per run
-- `aggregate.json`, `tables.md`
-- `results.smoke.tsv`   — discarded single-cell smoke test (older schema, not part of the 75)
+- `aggregate.json`      — generated summary used to render the retained table
+
+Per-run streams and the discarded single-cell smoke result were not retained in
+the repository.
 
 ## Harness decision
 The axi benchmark (`bench-github/` in github.com/kunchenguid/axi, cloned to `harness-eval/`)

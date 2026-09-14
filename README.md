@@ -74,9 +74,11 @@ calls are distinct assistant message ids, token totals come from the terminal
 `result` event. Condition order was shuffled per repeat block. **Medians and
 inter-quartile ranges** are reported across the five repeats, never means.
 
-**Pins (before)** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 · Claude Code CLI 2.1.267 ·
-agent and judge model `claude-sonnet-5` · run date **2026-09-11** · ~100 GitHub core
-REST requests for the whole experiment.
+**Pins** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 for the read baseline,
+1.2.4 for the write baseline, and 1.3.0 for both reruns · Claude Code CLI 2.1.267 ·
+agent and judge model `claude-sonnet-5` · read-baseline date **2026-09-11** · rerun
+date **2026-09-12**. The read baseline used about 100 GitHub core REST requests;
+the write tiers used the local mock.
 
 ### Results
 
