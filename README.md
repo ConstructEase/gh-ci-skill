@@ -188,10 +188,8 @@ the writes occurred.
   gh-ci runs the agent read `ci.sh pr` and then fell back to plain
   `gh pr view --json mergeable,...` — the extra turn is the whole difference on
   that row.
-- **T2 understates gh-ci's named-check wait.** The fixture check had already
-  completed, so `gh` and gh-axi could answer with a single one-shot probe. Neither
-  can actually *wait* on a named check; measuring that would need a check still in
-  flight, which this read-only fixture set could not provide.
+- **T2 understates gh-ci's named-check wait.** See the write-tier T3 follow-up,
+  which uses an in-flight mock check and measures the wait behavior directly.
 - **T4 measures the agent's filtering, not raw log size.** All three conditions
   piped or grepped the log rather than reading it whole, and Claude Code spills very
   large tool outputs to a file on its own — so gh-axi's 20,000-character log cap
@@ -207,7 +205,7 @@ The write-side half uses the local recording mock in
 in PR #15, reset for each cell and graded by the recorded HTTP call plus the LLM
 judge. It comprises 45 runs.
 A prior 9-run real-GitHub validation tier on 1.2.4 agreed on 8/9 cells; that history
-was not rerun here. T3 (list review threads) is not part of either benchmark half.
+was not rerun here. T3 is the named-check wait follow-up in the write tier.
 
 No read task was dropped: all five were measurable against existing repository state
 without creating anything.
