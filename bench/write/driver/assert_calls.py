@@ -200,9 +200,11 @@ def check_states(payload):
 def check(task, calls, exp):
     if task == "T3":
         reads = [c for c in calls if
-                 (c.get("method") == "GET" or "statusCheckRollup" in (c.get("graphql_fields") or [])) and
-                 ("check-runs" in c.get("rest_path", "") or
-                  "statusCheckRollup" in (c.get("graphql_fields") or [])) and ok(c)]
+                 ((c.get("method") == "GET" and
+                   "check-runs" in c.get("rest_path", "")) or
+                  (c.get("method") == "POST" and
+                   c.get("path") == "/api/graphql")) and
+                 ok(c)]
         scan_states = [state for call in reads
                        for state in check_states(call.get("response") or {})]
         if "in_progress" not in scan_states or "completed" not in scan_states:

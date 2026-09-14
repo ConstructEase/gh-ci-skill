@@ -118,15 +118,24 @@ BENCH_ANSWER_KEYS=/path/to/private/keys \
 python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.2-t3.tsv \
   bench/write/work/aggregate.1.3.2-t3.json
 python3 bench/mktable.py bench/write/work/aggregate.1.3.2-t3.json
+
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_RESULTS=bench/write/work/results.1.3.2-ghaxi.tsv \
+  BENCH_RUNROOT=bench/write/runs/1.3.2-ghaxi \
+  bench/write/driver/bench.sh --ghci 1.3.2 1 5 '' C-ghaxi
+python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.2-ghaxi.tsv \
+  bench/write/work/aggregate.1.3.2-ghaxi.json
+python3 bench/mktable.py bench/write/work/aggregate.1.3.2-ghaxi.json
 ```
 
 The separate `BENCH_RESULTS` and `BENCH_RUNROOT` paths prevent version runs from
 being appended together. A resumed command skips any already-recorded
 repeat/condition/task cell. Pass `--redo` before the positional arguments to remove
 that cell's result row and run directory and execute it again. The retained
-rerun cost was $15.02 ($8.01 read and $7.01 write), below the $20 stop boundary.
-Known limitations are live read-fixture drift, Actions log retention, and the
-300-character command-summary cutoff presented to the judge.
+historical 1.3.0 rerun cost was $15.02 ($8.01 read and $7.01 write), below the
+$20 stop boundary. Known limitations are live read-fixture drift, Actions log
+retention, and the 300-character command-summary cutoff used by the historical
+judge runs; T3 was regraded with untruncated commands and compact call-log evidence.
 
 ## Retained results
 

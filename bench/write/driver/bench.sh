@@ -12,7 +12,7 @@
 #     write-side failure that matters -- "replied to the thread" when the agent
 #     actually posted a top-level comment -- is invisible in prose.
 #
-# Usage: bench.sh [--redo] --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
+# Usage: bench.sh [--redo] --ghci 1.2.3|1.2.4|1.3.0|1.3.2 <rep-start> <rep-end> [task-filter] [cond-filter]
 set -uo pipefail
 
 CALLER_PWD="$PWD"

@@ -44,7 +44,9 @@ def gql(fields, variables=None, status=200, errors=False, arguments=None,
 
 def check_read(response, graphql=False):
     if graphql:
-        call = gql(["statusCheckRollup"])
+        # The forge records top-level operation fields; statusCheckRollup is
+        # nested beneath repository/pullRequest in real GraphQL requests.
+        call = gql(["repository"])
     else:
         call = rest("/repos/o/r/check-runs/501", {}, status=200, method="GET")
     call["response"] = response
