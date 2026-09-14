@@ -527,7 +527,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                     errors.append("Could not resolve to a Repository with the name "
                                   "'%s/%s'." % (args["owner"], args["name"]))
                     return None
-            return _repo_node(d, self.state.check_runs())
+            return _repo_node(d, self.state.check_runs)
 
         def node(args):
             node_id = args.get("id")
@@ -535,7 +535,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             if thread is not None:
                 return _thread_node(d, thread)
             if node_id == d["pull"]["node_id"]:
-                return _pull_node(d, self.state.check_runs())
+                return _pull_node(d, self.state.check_runs)
             errors.append("Could not resolve to a node with the global id of "
                           "'%s'" % node_id)
             return None
@@ -577,7 +577,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             d["issue_comments"].append(comment)
             return {"__typename": "AddCommentPayload",
                     "clientMutationId": inp.get("clientMutationId"),
-                    "subject": _pull_node(d),
+                    "subject": _pull_node(d, self.state.check_runs),
                     "commentEdge": {"node": _issue_comment_node(d, comment)}}
 
         def reply_to_thread(args):
@@ -846,13 +846,14 @@ def _check_node(c):
 
 def _check_rollup(checks):
     nodes = [_check_node(c) for c in checks]
-    return dict(_connection(nodes), contexts=_connection(nodes))
+    return {"__typename": "StatusCheckRollup", "contexts": _connection(nodes)}
 
 
-def _pull_node(d, checks=None):
+def _pull_node(d, check_runs):
     p = d["pull"]
-    checks = d.get("check_runs", []) if checks is None else checks
-    rollup = _check_rollup(checks)
+    def rollup(_args):
+        return _check_rollup(check_runs())
+
     url = "https://github.com/%s/%s/pull/%d" % (d["owner"], d["repo"], p["number"])
     return {
         "__typename": "PullRequest",
@@ -889,12 +890,12 @@ def _pull_node(d, checks=None):
     }
 
 
-def _repo_node(d, checks=None):
+def _repo_node(d, check_runs):
     def pull_request(args):
         number = args.get("number")
         if number is not None and int(number) != d["pull"]["number"]:
             return None
-        return _pull_node(d, checks)
+        return _pull_node(d, check_runs)
 
     return {
         "__typename": "Repository",
@@ -912,7 +913,7 @@ def _repo_node(d, checks=None):
         "viewerPermission": "ADMIN",
         "defaultBranchRef": {"name": "main"},
         "pullRequest": pull_request,
-        "pullRequests": _connection([_pull_node(d, checks)]),
+        "pullRequests": _connection([_pull_node(d, check_runs)]),
     }
 
 

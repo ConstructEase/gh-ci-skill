@@ -571,8 +571,15 @@ first_thread_id() {
   [ "$(echo "$output" | jq '[.[] | select(.rest_path=="/user")] | length')" -eq 1 ]
 }
 
-@test "forge: seeded checks are exposed individually and through both GraphQL rollups" {
+@test "forge: seeded checks are exposed individually and through GraphQL rollups" {
   forge_start
+  run gh api graphql -f query='query {
+    repository(owner: "ConstructEase", name: "gh-ci-bench-fixture") {
+      pullRequest(number: 1) { headRefOid }
+    }
+  }'
+  [ "$status" -eq 0 ]
+
   run gh api "repos/$GH_REPO/check-runs/501"
   [ "$status" -eq 0 ]
   [ "$(echo "$output" | jq -r '[.id, .name, .status] | @tsv')" = $'501\tscan_ruby\tin_progress' ]
@@ -580,7 +587,7 @@ first_thread_id() {
   run gh api graphql -f query='query {
     repository(owner: "ConstructEase", name: "gh-ci-bench-fixture") {
       pullRequest(number: 1) {
-        statusCheckRollup { nodes { name status conclusion } }
+        statusCheckRollup { contexts(first: 100) { nodes { name status conclusion } } }
         commits(last: 1) { nodes { commit {
           statusCheckRollup { contexts(first: 100) { nodes { name status conclusion } } }
         } } }
@@ -588,7 +595,7 @@ first_thread_id() {
     }
   }'
   [ "$status" -eq 0 ]
-  direct=$(echo "$output" | jq -r '.data.repository.pullRequest.statusCheckRollup.nodes[] | select(.name=="scan_ruby") | .status')
+  direct=$(echo "$output" | jq -r '.data.repository.pullRequest.statusCheckRollup.contexts.nodes[] | select(.name=="scan_ruby") | .status')
   nested=$(echo "$output" | jq -r '.data.repository.pullRequest.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[] | select(.name=="scan_ruby") | .status')
   [ "$direct" = "IN_PROGRESS" ]
   [ "$nested" = "IN_PROGRESS" ]

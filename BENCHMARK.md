@@ -2,15 +2,18 @@
 
 This directory retains the harness, frozen inputs, manifests, raw result rows, and
 aggregates for the gh-ci benchmark. The read tier runs T1, T2, T4, T5, and T6
-against existing, unmodified GitHub state. The write tier runs T7, T8, and T9 only
+against existing, unmodified GitHub state. The historical write tier runs T7, T8,
+and T9 only
 against `tests/mock-forge/`, the local recording GitHub-API mock introduced in PR
-#15. The rerun performed no real-GitHub writes and had no second write tier.
+#15. The 1.3.2 follow-up adds a separate T3 named-check task and corrected gh-axi
+T7–T9 cells. The reruns performed no real-GitHub writes.
 
 ## Experimental design
 
 Each task × condition cell has five repeats, with condition order deterministically
-shuffled within each repeat. Read versions contain 75 agent runs; write versions
-contain 45. Conditions are gh-ci, a minimal plain-`gh` instruction, and gh-axi with
+shuffled within each repeat. Read versions contain 75 agent runs; historical write
+versions contain 45, and the T3 follow-up contains 15. Conditions are gh-ci, a
+minimal plain-`gh` instruction, and gh-axi with
 its product SessionStart hook. Every cell uses a fresh git workspace and only the
 selected condition as project instructions.
 
@@ -127,7 +130,7 @@ Known limitations are live read-fixture drift, Actions log retention, and the
 
 ## Retained results
 
-All four tables intentionally use the same columns. Read success is the judge result;
+All six tables intentionally use the same columns. Read success is the judge result;
 write success reports call assertion and judge results. Token columns and wall time
 are medians.
 

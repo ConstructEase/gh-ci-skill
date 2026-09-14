@@ -27,12 +27,13 @@ examples. Run `ci.sh help` for the complete runtime command list.
 ## Benchmark results
 
 Three-way comparison between **gh-ci** (this skill), the plain **`gh`** CLI, and
-**gh-axi** in two tiers: five read tasks against real, unmodified GitHub state and
-three write tasks against the local recording GitHub-API mock in
+**gh-axi** in two historical tiers: five read tasks against real, unmodified GitHub
+state and three write tasks (T7–T9) against the local recording GitHub-API mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
 in PR #15. A nine-run tier on gh-ci 1.2.4 validated the mock once against real GitHub
 and agreed on eight of nine cells. Nothing was created, commented on, resolved, or
-pushed on any real repository during the read tier or the rerun.
+pushed on any real repository during the read tier or the rerun. The 1.3.2 follow-up
+adds T3 as a separate named-check wait task.
 
 ### Method
 
@@ -43,9 +44,9 @@ runs**, each followed by one LLM-judge call.
 report its conclusion; T4 read a failing Actions run's log and identify the cause;
 T5 check PR mergeability; T6 read a PR's conversation comments.
 
-**Write tasks** — T3 wait for the named `scan_ruby` check; T7 reply to a specific inline review comment inside its thread; T8
+**Write tasks** — the historical tier has T7 reply to a specific inline review comment inside its thread; T8
 post a top-level PR conversation comment; T9 mark a specific review thread resolved
-without commenting.
+without commenting. The 1.3.2 follow-up has T3 wait for the named `scan_ruby` check.
 
 **Conditions** — each run got a fresh temporary working directory whose *only*
 project instruction was that condition's file, with no other skills loaded and no
@@ -84,7 +85,7 @@ the write tiers used the local mock.
 
 ### Results
 
-These four version tables use one schema. Read success is the judge result; write success reports deterministic call assertion and judge results. Token columns and wall time are medians across five repeats. Compare each tier’s adjacent version tables for the before/after result.
+These six result tables use one schema. Read success is the judge result; write success reports deterministic call assertion and judge results. Token columns and wall time are medians across five repeats. Compare each historical tier’s adjacent version tables for the before/after result; the final two tables report the 1.3.2 follow-up.
 
 #### Read 1.2.3
 
@@ -237,7 +238,8 @@ original judge outputs remain retained.
 The write-side half uses the local recording mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
 in PR #15, reset for each cell and graded by the recorded HTTP call plus the LLM
-judge. It comprises 45 runs.
+judge. The historical write tier comprises 45 runs; T3 is a separate 15-run
+named-check follow-up.
 A prior 9-run real-GitHub validation tier on 1.2.4 agreed on 8/9 cells; that history
 was not rerun here. T3 is the named-check wait follow-up in the write tier.
 
