@@ -27,11 +27,15 @@ def rest(path, body, status=201, method="POST"):
             "body": body, "status": status}
 
 
-def gql(fields, variables=None, status=200, errors=False):
+def gql(fields, variables=None, status=200, errors=False, arguments=None):
     call = {"method": "POST", "path": "/api/graphql", "rest_path": "/api/graphql",
             "body": {"query": "mutation Named { %s }" % fields[0],
                      "variables": variables or {}},
             "status": status, "graphql_fields": sorted(fields)}
+    if arguments is not None:
+        call["graphql_arguments"] = [
+            {"field": field, "arguments": args} for field, args in arguments
+        ]
     if errors:
         call["graphql_errors"] = True
     return call
@@ -48,6 +52,13 @@ CASES = [
                 {"input": {"pullRequestReviewThreadId": "PRRT_target", "body": BODY}})], "PASS"),
     ("T7", [gql(["addPullRequestReviewComment"],
                 {"input": {"inReplyTo": "PRRC_target", "body": BODY}})], "PASS"),
+    ("T7", [gql(["addPullRequestReviewThreadReply"],
+                {"threadId": "PRRT_target", "body": BODY},
+                arguments=[("addPullRequestReviewThreadReply", {"input": {
+                    "pullRequestReviewThreadId": "PRRT_target", "body": BODY}})])], "PASS"),
+    ("T7", [gql(["addPullRequestReviewComment"], {},
+                arguments=[("addPullRequestReviewComment", {"input": {
+                    "inReplyTo": "PRRC_target", "body": BODY}})])], "PASS"),
     # the failure an LLM judge cannot see
     ("T7", [rest(ISSUE, {"body": BODY})], "FAIL"),
     ("T7", [gql(["addComment"], {"input": {"subjectId": "PR_1", "body": BODY}})], "FAIL"),
@@ -83,6 +94,9 @@ CASES = [
     ("T8", [rest(ISSUE, {"body": BODY})], "PASS"),
     # gh names the operation CommentCreate; the field is what identifies it
     ("T8", [gql(["addComment"], {"input": {"subjectId": "PR_1", "body": BODY}})], "PASS"),
+    ("T8", [gql(["addComment"], {"subject": "PR_1", "text": BODY},
+                arguments=[("addComment", {"input": {
+                    "subjectId": "PR_1", "body": BODY}})])], "PASS"),
     ("T8", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": "no marker"})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": "MARK1 --repo o/r"})], "FAIL"),
@@ -101,6 +115,9 @@ CASES = [
 
     # --- T9: resolve exactly one thread ---
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "PASS"),
+    ("T9", [gql(["resolveReviewThread"], {},
+                arguments=[("resolveReviewThread", {"input": {
+                    "threadId": "PRRT_target"}})])], "PASS"),
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_other"})], "FAIL"),
     # resolved then undid it
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"}),

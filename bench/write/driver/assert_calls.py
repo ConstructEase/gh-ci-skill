@@ -111,6 +111,23 @@ def gql_comment_calls(calls):
     return graphql(calls, "addComment")
 
 
+def mutation_input(call, field):
+    recorded = call.get("graphql_arguments")
+    if recorded is not None:
+        match = next((item.get("arguments") for item in recorded
+                      if item.get("field") == field), {})
+        args = match if isinstance(match, dict) else {}
+        inp = args.get("input")
+        if isinstance(inp, dict):
+            return inp
+        return args
+    variables = body_of(call).get("variables") or {}
+    inp = variables.get("input")
+    if isinstance(inp, dict):
+        return inp
+    return variables
+
+
 def check(task, calls, exp):
     pr = exp["pr"]
     expected_body = exp.get("expected_body", "%s (ref %s)" % (exp["comment_text"], exp["mark"]))
@@ -151,8 +168,11 @@ def check(task, calls, exp):
                         % (target, exp["comment_id"]))
             text = body.get("body") or ""
         else:
-            variables = body.get("variables") or {}
-            inp = variables.get("input") or {}
+            if call in graphql(calls, "addPullRequestReviewThreadReply"):
+                field = "addPullRequestReviewThreadReply"
+            else:
+                field = "addPullRequestReviewComment"
+            inp = mutation_input(call, field)
             thread_id = inp.get("pullRequestReviewThreadId") or inp.get("inReplyTo")
             if thread_id not in (exp["thread_id"], exp.get("comment_node_id")):
                 return "FAIL - GraphQL reply targeted %r, expected the quoted thread" % (thread_id,)
@@ -178,7 +198,7 @@ def check(task, calls, exp):
         if call in issue_posts:
             text = body.get("body") or ""
         else:
-            inp = ((body.get("variables") or {}).get("input")) or {}
+            inp = mutation_input(call, "addComment")
             text = inp.get("body") or ""
         if text != expected_body:
             return "FAIL - comment body was %r, expected %r" % (text, expected_body)
@@ -195,8 +215,7 @@ def check(task, calls, exp):
             return "FAIL - made %d resolve calls, expected 1" % len(resolves)
         targets = set()
         for call in resolves:
-            variables = body_of(call).get("variables") or {}
-            tid = variables.get("threadId")
+            tid = mutation_input(call, "resolveReviewThread").get("threadId")
             if tid is None:
                 # an inline literal mutation: read it out of the query text
                 query = body_of(call).get("query") or ""
