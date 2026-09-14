@@ -191,10 +191,15 @@ def check(task, calls, exp):
                  ("check-runs" in c.get("rest_path", "") or
                   "statusCheckRollup" in (c.get("graphql_fields") or [])) and ok(c)]
         payloads = [c.get("response") or c.get("response_body") or {} for c in reads]
-        # The forge records response payloads in newer logs; accept status evidence
-        # encoded in the request fixture logs as well.
-        states = json.dumps(payloads + calls)
-        if '"in_progress"' not in states or '"completed"' not in states:
+        scan_states = []
+        for payload in payloads:
+            items = payload.get("check_runs", []) if isinstance(payload, dict) else []
+            if isinstance(payload, dict) and "contexts" in payload:
+                items = payload["contexts"]
+            for item in items:
+                if item.get("name") == "scan_ruby":
+                    scan_states.append(item.get("status"))
+        if "in_progress" not in scan_states or "completed" not in scan_states:
             return "FAIL - did not observe both in-progress and completed check states"
         if any(c.get("method") in ("PATCH", "DELETE") and ok(c)
                or (c.get("method") == "POST" and c.get("path") != "/api/graphql" and ok(c))

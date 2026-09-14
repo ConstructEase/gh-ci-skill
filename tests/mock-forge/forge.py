@@ -624,7 +624,6 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             "repository": repository,
             "viewer": _viewer_node(d),
             "node": node,
-            "statusCheckRollup": status_check_rollup,
             "rateLimit": {"limit": 5000, "remaining": 4999, "cost": 1,
                           "used": 1, "resetAt": d["now"]},
         }
@@ -745,7 +744,6 @@ def _pull_obj(d):
         "mergeable": True,
         "mergeable_state": "clean",
         "draft": False,
-        "statusCheckRollup": {"contexts": d.get("check_runs", [])},
         "created_at": d["now"],
         "updated_at": d["now"],
     }
