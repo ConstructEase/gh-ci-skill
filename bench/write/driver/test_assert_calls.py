@@ -16,7 +16,8 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXP = {"pr": "1", "mark": "MARK1", "comment_id": "3408268489",
-       "thread_id": "PRRT_target", "comment_text": "Fixed it.",
+       "thread_id": "PRRT_target", "comment_node_id": "PRRC_target",
+       "comment_text": "Fixed it.",
        "expected_body": "Fixed it. (ref MARK1)"}
 BODY = "Fixed it. (ref MARK1)"
 
@@ -45,6 +46,8 @@ CASES = [
     ("T7", [rest("/repos/o/r/pulls/1/comments/3408268489/replies", {"body": BODY})], "PASS"),
     ("T7", [gql(["addPullRequestReviewThreadReply"],
                 {"input": {"pullRequestReviewThreadId": "PRRT_target", "body": BODY}})], "PASS"),
+    ("T7", [gql(["addPullRequestReviewComment"],
+                {"input": {"inReplyTo": "PRRC_target", "body": BODY}})], "PASS"),
     # the failure an LLM judge cannot see
     ("T7", [rest(ISSUE, {"body": BODY})], "FAIL"),
     ("T7", [gql(["addComment"], {"input": {"subjectId": "PR_1", "body": BODY}})], "FAIL"),

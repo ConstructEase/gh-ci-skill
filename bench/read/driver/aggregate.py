@@ -13,6 +13,7 @@ from collections import defaultdict
 D = os.environ.get("BENCH_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TASKS = ["T1", "T2", "T4", "T5", "T6"]
 CONDS = ["C-ghci", "C-gh", "C-ghaxi"]
+OUT_PATH = None
 
 
 def quantile(xs, q):
@@ -39,7 +40,7 @@ def iqr(xs):
 
 def main(path=None):
     rows = []
-    with open(path or f"{D}/results.tsv") as fh:
+    with open(path or f"{D}/work/results.tsv") as fh:
         for r in csv.DictReader(fh, delimiter="\t"):
             rows.append(r)
 
@@ -102,7 +103,7 @@ def main(path=None):
         }
 
     report = {"cells": out, "conditions": roll, "runs": len(rows)}
-    with open(f"{D}/aggregate.json", "w") as fh:
+    with open(OUT_PATH or f"{D}/aggregate.json", "w") as fh:
         json.dump(report, fh, indent=2)
 
     print(f"runs={len(rows)}")
@@ -137,4 +138,6 @@ def main(path=None):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 2:
+        OUT_PATH = sys.argv[2]
     main(sys.argv[1] if len(sys.argv) > 1 else None)

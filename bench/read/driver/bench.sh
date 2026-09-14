@@ -10,16 +10,8 @@ D="${BENCH_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 REPO_ROOT="$(git -C "$D" rev-parse --show-toplevel)"
 GHCI_VERSION=""
 if [ "${1:-}" = --ghci ]; then GHCI_VERSION="${2:-}"; shift 2; fi
-case "$GHCI_VERSION" in
-  1.2.3) GHCI_COMMIT=3be16034aacffaefa462a61d269d8224b9a158a4 ;;
-  1.2.4) GHCI_COMMIT=d70569a2fdb5662a359e1200d91a1f28514d4a30 ;;
-  1.3.0) GHCI_COMMIT=cf2528060c34c16c838e247780f748fe5ab13dc3 ;;
-  *) echo "bench: --ghci must be 1.2.3, 1.2.4, or 1.3.0" >&2; exit 2 ;;
-esac
+bash "$REPO_ROOT/bench/materialize-ghci.sh" "$REPO_ROOT" "$D/payload" "$GHCI_VERSION" || exit 1
 PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
-mkdir -p "$PAYLOAD/resources"
-git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/SKILL.md" > "$PAYLOAD/SKILL.md"
-git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/resources/ci.sh" > "$PAYLOAD/resources/ci.sh"
 
 NO_GHAXI_PATH=""
 IFS=: read -r -a PATH_PARTS <<<"$PATH"
@@ -44,7 +36,9 @@ REP_START="${1:-1}"; REP_END="${2:-1}"
 TASK_FILTER="${3:-}"; COND_FILTER="${4:-}"
 
 CONDS=(C-ghci C-gh C-ghaxi)
-RESULTS="$D/results.tsv"
+RESULTS="${BENCH_RESULTS:-$D/work/results.tsv}"
+RUNROOT="${BENCH_RUNROOT:-$D/runs/current}"
+mkdir -p "$(dirname "$RESULTS")" "$RUNROOT"
 if [ ! -f "$RESULTS" ]; then
   printf 'rep\tcond\ttask\texit\twall_ms\tapi_calls\ttool_calls\tin_tok\tcache_read\tcache_write\tout_tok\tverdict\tagent_usd\tjudge_usd\n' > "$RESULTS"
 fi
@@ -56,7 +50,7 @@ shuffle_conds() {
 
 run_cell() {
   local rep="$1" cond="$2" task="$3" repo="$4" prompt="$5"
-  local out="$D/runs/rep$rep/$cond/$task"
+  local out="$RUNROOT/rep$rep/$cond/$task"
   mkdir -p "$out"
   local ws="$D/work/$rep-$cond-$task"
   rm -rf "$ws"; mkdir -p "$ws/.claude"

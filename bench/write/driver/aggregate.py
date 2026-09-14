@@ -50,7 +50,7 @@ OUT_PATH = None
 
 def main(path=None):
     rows = []
-    with open(path or f"{D}/results.tier1.tsv") as fh:
+    with open(path or f"{D}/work/results.tier1.tsv") as fh:
         for r in csv.DictReader(fh, delimiter="\t"):
             rows.append(r)
 

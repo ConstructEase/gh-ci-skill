@@ -1,15 +1,15 @@
-0	3408268489	PRRT_kwDOMOCKFx86JVu00	This retry loop has no upper bound. If the upstream stays down we spin forever.
-1	3408275502	PRRT_kwDOMOCKFx86JVu01	`session_id` is read before the null check below - swap the two lines.
-2	3408282515	PRRT_kwDOMOCKFx86JVu02	Nit: this duplicates the helper in `util/retry.ts`. Reuse it?
-3	3408289528	PRRT_kwDOMOCKFx86JVu03	Missing `await` here, so the error never surfaces to the caller.
-4	3408296541	PRRT_kwDOMOCKFx86JVu04	Hard-coded 30s timeout. Pull it into the config object with the others.
-5	3408303554	PRRT_kwDOMOCKFx86JVu05	This swallows the exception. At minimum log it before returning null.
-6	3408310567	PRRT_kwDOMOCKFx86JVu06	Off-by-one: the slice drops the last element.
-7	3408317580	PRRT_kwDOMOCKFx86JVu07	Should this be `>=`? A zero-length batch currently takes the slow path.
-8	3408324593	PRRT_kwDOMOCKFx86JVu08	The cache key omits the tenant id, so two tenants can collide.
-9	3408331606	PRRT_kwDOMOCKFx86JVu09	Consider extracting this 40-line block into a named function.
-10	3408338619	PRRT_kwDOMOCKFx86JVu10	`any` here defeats the point of the generic parameter.
-11	3408345632	PRRT_kwDOMOCKFx86JVu11	This comparison is case-sensitive but the header is not.
-12	3408352645	PRRT_kwDOMOCKFx86JVu12	Doc comment still says the old function name.
-13	3408359658	PRRT_kwDOMOCKFx86JVu13	No test covers the failure branch introduced above.
-14	3408366671	PRRT_kwDOMOCKFx86JVu14	Reads the env var on every call; hoist it to module scope.
+0	3408268489	PRRT_kwDOMOCKFx86JVu00	PRRC_kwDOMOCKF86Ja00	This retry loop has no upper bound. If the upstream stays down we spin forever.
+1	3408275502	PRRT_kwDOMOCKFx86JVu01	PRRC_kwDOMOCKF86Ja01	`session_id` is read before the null check below - swap the two lines.
+2	3408282515	PRRT_kwDOMOCKFx86JVu02	PRRC_kwDOMOCKF86Ja02	Nit: this duplicates the helper in `util/retry.ts`. Reuse it?
+3	3408289528	PRRT_kwDOMOCKFx86JVu03	PRRC_kwDOMOCKF86Ja03	Missing `await` here, so the error never surfaces to the caller.
+4	3408296541	PRRT_kwDOMOCKFx86JVu04	PRRC_kwDOMOCKF86Ja04	Hard-coded 30s timeout. Pull it into the config object with the others.
+5	3408303554	PRRT_kwDOMOCKFx86JVu05	PRRC_kwDOMOCKF86Ja05	This swallows the exception. At minimum log it before returning null.
+6	3408310567	PRRT_kwDOMOCKFx86JVu06	PRRC_kwDOMOCKF86Ja06	Off-by-one: the slice drops the last element.
+7	3408317580	PRRT_kwDOMOCKFx86JVu07	PRRC_kwDOMOCKF86Ja07	Should this be `>=`? A zero-length batch currently takes the slow path.
+8	3408324593	PRRT_kwDOMOCKFx86JVu08	PRRC_kwDOMOCKF86Ja08	The cache key omits the tenant id, so two tenants can collide.
+9	3408331606	PRRT_kwDOMOCKFx86JVu09	PRRC_kwDOMOCKF86Ja09	Consider extracting this 40-line block into a named function.
+10	3408338619	PRRT_kwDOMOCKFx86JVu10	PRRC_kwDOMOCKF86Ja10	`any` here defeats the point of the generic parameter.
+11	3408345632	PRRT_kwDOMOCKFx86JVu11	PRRC_kwDOMOCKF86Ja11	This comparison is case-sensitive but the header is not.
+12	3408352645	PRRT_kwDOMOCKFx86JVu12	PRRC_kwDOMOCKF86Ja12	Doc comment still says the old function name.
+13	3408359658	PRRT_kwDOMOCKFx86JVu13	PRRC_kwDOMOCKF86Ja13	No test covers the failure branch introduced above.
+14	3408366671	PRRT_kwDOMOCKFx86JVu14	PRRC_kwDOMOCKF86Ja14	Reads the env var on every call; hoist it to module scope.

@@ -20,16 +20,8 @@ FORGE="${MOCK_FORGE:-$D/../../tests/mock-forge}"
 REPO_ROOT="$(git -C "$D" rev-parse --show-toplevel)"
 GHCI_VERSION=""
 if [ "${1:-}" = --ghci ]; then GHCI_VERSION="${2:-}"; shift 2; fi
-case "$GHCI_VERSION" in
-  1.2.3) GHCI_COMMIT=3be16034aacffaefa462a61d269d8224b9a158a4 ;;
-  1.2.4) GHCI_COMMIT=d70569a2fdb5662a359e1200d91a1f28514d4a30 ;;
-  1.3.0) GHCI_COMMIT=cf2528060c34c16c838e247780f748fe5ab13dc3 ;;
-  *) echo "bench: --ghci must be 1.2.3, 1.2.4, or 1.3.0" >&2; exit 2 ;;
-esac
+bash "$REPO_ROOT/bench/materialize-ghci.sh" "$REPO_ROOT" "$D/payload" "$GHCI_VERSION" || exit 1
 PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
-mkdir -p "$PAYLOAD/resources"
-git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/SKILL.md" > "$PAYLOAD/SKILL.md"
-git -C "$REPO_ROOT" show "$GHCI_COMMIT:gh-ci/resources/ci.sh" > "$PAYLOAD/resources/ci.sh"
 NO_GHAXI_PATH=""
 IFS=: read -r -a PATH_PARTS <<<"$PATH"
 for path_index in "${!PATH_PARTS[@]}"; do
@@ -48,10 +40,11 @@ MODEL="${BENCH_MODEL:-claude-sonnet-5}"
 JUDGE_MODEL="${BENCH_JUDGE_MODEL:-claude-sonnet-5}"
 RUN_TIMEOUT="${BENCH_TIMEOUT:-240}"
 JUDGE_TIMEOUT="${BENCH_JUDGE_TIMEOUT:-120}"
-RESULTS="${BENCH_RESULTS:-$D/results.tier1.tsv}"
-RUNROOT="${BENCH_RUNROOT:-$D/runs/tier1}"
+RESULTS="${BENCH_RESULTS:-$D/work/results.tier1.tsv}"
+RUNROOT="${BENCH_RUNROOT:-$D/runs/current}"
 TARGETS="${BENCH_TARGETS:-$D/tasks/targets.tier1.tsv}"
 FORGE_RUN="$D/forge-run"
+mkdir -p "$(dirname "$RESULTS")" "$RUNROOT"
 
 REP_START="${1:-1}"; REP_END="${2:-1}"
 TASK_FILTER="${3:-}"; COND_FILTER="${4:-}"
@@ -82,11 +75,12 @@ run_cell() {
   local ci; ci="$(cond_index "$cond")"
   local tidx=$(( (offset + (rep - 1) * 3 + ci) % 15 ))
 
-  local target_line comment_id thread_id text expected_body
+  local target_line comment_id thread_id comment_node_id text expected_body
   target_line="$(awk -F'\t' -v i="$tidx" '$1==i' "$TARGETS")"
   comment_id="$(cut -f2 <<<"$target_line")"
   thread_id="$(cut -f3 <<<"$target_line")"
-  text="$(cut -f4- <<<"$target_line")"
+  comment_node_id="$(cut -f4 <<<"$target_line")"
+  text="$(cut -f5- <<<"$target_line")"
 
   local repo="$GH_REPO" pr=1
 
@@ -106,9 +100,9 @@ run_cell() {
   local out="$RUNROOT/rep$rep/$cond/$task"
   mkdir -p "$out"
   jq -n --arg pr "$pr" --arg mark "$mark" --arg cid "$comment_id" \
-        --arg tid "$thread_id" --arg text "$text" \
+        --arg tid "$thread_id" --arg comment_node_id "$comment_node_id" --arg text "$text" \
     --arg expected_body "$expected_body" \
-    '{pr:$pr, mark:$mark, comment_id:$cid, thread_id:$tid, comment_text:$text, expected_body:$expected_body}' \
+    '{pr:$pr, mark:$mark, comment_id:$cid, thread_id:$tid, comment_node_id:$comment_node_id, comment_text:$text, expected_body:$expected_body}' \
     > "$out/expected.json"
   printf '%s' "$prompt" > "$out/prompt.txt"
 
