@@ -53,7 +53,7 @@ permission prompts:
 
 | Condition | Instruction given to the agent | Environment |
 |---|---|---|
-| gh-ci | gh-ci 1.2.3's `gh-ci/SKILL.md` (4,603 B) | `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
+| gh-ci | The `gh-ci/SKILL.md` version named by each table: 1.2.3 read baseline, 1.2.4 write baseline, 1.3.0 reruns | Matching `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
 | `gh` | a minimal "you have the `gh` CLI, use it" note (189 B) | no skill; `gh-axi` removed from `PATH` |
 | gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
 

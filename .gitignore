@@ -9,3 +9,4 @@ bench/write/work
 bench/write/runs
 bench/write/pathshim
 bench/write/payload
+bench/**/forge-run/
