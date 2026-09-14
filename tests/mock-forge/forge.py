@@ -71,6 +71,8 @@ class ForgeState:
         # reproducible while the ids it hands out still look like real ones.
         self._id_state = int(self.data.get("id_seed", 20260911))
         self.calls = []
+        self.check_observed_at = None
+        self.check_flip_seconds = float(os.environ.get("FORGE_CHECK_FLIP_SECONDS", "60"))
         if self.log_path:
             open(self.log_path, "w").close()
 
@@ -108,6 +110,14 @@ class ForgeState:
                     return t
         return None
 
+    def check_runs(self):
+        if self.check_observed_at is None:
+            self.check_observed_at = time.monotonic()
+        flipped = time.monotonic() - self.check_observed_at >= self.check_flip_seconds
+        return [dict(c, **({"status": "completed", "conclusion": "failure"}
+                           if c.get("name") == "scan_ruby" and flipped else {}))
+                for c in self.data.get("check_runs", [])]
+
 
 class ForgeHandler(http.server.BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -121,6 +131,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
     def _send(self, code, payload):
         if getattr(self, "_entry", None) is not None:
             self._entry["status"] = code
+            self._entry["response"] = payload
         self._last_payload = payload
         body = json.dumps(payload).encode()
         self.send_response(code)
@@ -242,6 +253,15 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)", path)
         if m and method == "GET":
             self._send(200, _repo_obj(d))
+            return
+
+        m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/commits/([^/]+)/check-runs", path)
+        if m and method == "GET":
+            if (m.group(1), m.group(2)) != (d["owner"], d["repo"]) or m.group(3) != d["pull"]["head_sha"]:
+                self._error(404, "No commit found for SHA")
+                return
+            runs = st.check_runs()
+            self._send(200, {"total_count": len(runs), "check_runs": runs})
             return
 
         # POST /repos/{o}/{r}/pulls/{n}/comments  -- reply (in_reply_to) or new thread
@@ -487,7 +507,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                     errors.append("Could not resolve to a Repository with the name "
                                   "'%s/%s'." % (args["owner"], args["name"]))
                     return None
-            return _repo_node(d)
+            return _repo_node(d, self.state.check_runs())
 
         def node(args):
             node_id = args.get("id")
@@ -495,10 +515,13 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             if thread is not None:
                 return _thread_node(d, thread)
             if node_id == d["pull"]["node_id"]:
-                return _pull_node(d)
+                return _pull_node(d, self.state.check_runs())
             errors.append("Could not resolve to a node with the global id of "
                           "'%s'" % node_id)
             return None
+
+        def status_check_rollup(args):
+            return {"nodes": [_check_node(c) for c in self.state.check_runs()]}
 
         def toggle(resolved, field):
             def run(args):
@@ -593,6 +616,7 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             "repository": repository,
             "viewer": _viewer_node(d),
             "node": node,
+            "statusCheckRollup": status_check_rollup,
             "rateLimit": {"limit": 5000, "remaining": 4999, "cost": 1,
                           "used": 1, "resetAt": d["now"]},
         }
@@ -713,6 +737,7 @@ def _pull_obj(d):
         "mergeable": True,
         "mergeable_state": "clean",
         "draft": False,
+        "statusCheckRollup": {"contexts": d.get("check_runs", [])},
         "created_at": d["now"],
         "updated_at": d["now"],
     }
@@ -797,7 +822,12 @@ def _thread_node(d, t):
     }
 
 
-def _pull_node(d):
+def _check_node(c):
+    return {"__typename": "CheckRun", "name": c["name"], "status": c["status"],
+            "conclusion": c.get("conclusion"), "detailsUrl": c.get("details_url")}
+
+
+def _pull_node(d, checks=None):
     p = d["pull"]
     url = "https://github.com/%s/%s/pull/%d" % (d["owner"], d["repo"], p["number"])
     return {
@@ -830,17 +860,17 @@ def _pull_node(d):
         "files": _connection([]),
         "labels": _connection([]),
         "assignees": _connection([]),
-        "statusCheckRollup": None,
+        "statusCheckRollup": {"contexts": [_check_node(c) for c in (checks or d.get("check_runs", []))]},
         "reviewThreads": _connection([_thread_node(d, t) for t in d["threads"]]),
     }
 
 
-def _repo_node(d):
+def _repo_node(d, checks=None):
     def pull_request(args):
         number = args.get("number")
         if number is not None and int(number) != d["pull"]["number"]:
             return None
-        return _pull_node(d)
+        return _pull_node(d, checks)
 
     return {
         "__typename": "Repository",
@@ -858,7 +888,7 @@ def _repo_node(d):
         "viewerPermission": "ADMIN",
         "defaultBranchRef": {"name": "main"},
         "pullRequest": pull_request,
-        "pullRequests": _connection([_pull_node(d)]),
+        "pullRequests": _connection([_pull_node(d, checks)]),
     }
 
 

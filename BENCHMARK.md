@@ -60,6 +60,11 @@ before starting a benchmark if the variable is unset or a required key is missin
 
 ## Reproduction
 
+T3 uses a local in-flight check: `scan_ruby` starts `in_progress` and flips to
+`completed`/`failure` after `FORGE_CHECK_FLIP_SECONDS` (default 60) from its
+first observation after reset. `gh pr checks --watch` and `gh run watch` wait on
+all checks rather than one named check; runs using those commands are valid.
+
 Prerequisites are Bash, git, `gh`, `jq`, Python 3, Claude Code, and the development
 requirements listed by `tests/mock-forge/README.md`. From the repository root:
 

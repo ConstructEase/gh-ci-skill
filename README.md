@@ -43,7 +43,7 @@ runs**, each followed by one LLM-judge call.
 report its conclusion; T4 read a failing Actions run's log and identify the cause;
 T5 check PR mergeability; T6 read a PR's conversation comments.
 
-**Write tasks** — T7 reply to a specific inline review comment inside its thread; T8
+**Write tasks** — T3 wait for the named `scan_ruby` check; T7 reply to a specific inline review comment inside its thread; T8
 post a top-level PR conversation comment; T9 mark a specific review thread resolved
 without commenting.
 

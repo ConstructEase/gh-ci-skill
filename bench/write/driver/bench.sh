@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gh-ci benchmark driver — write-side half (T7 reply, T8 comment, T9 resolve).
+# gh-ci benchmark driver — write-side half (T3 check wait, T7 reply, T8 comment, T9 resolve).
 #
 # Same rig as the read half: one `claude -p --output-format stream-json` per
 # (task x condition x repeat), usage parsed from the stream, an LLM judge
@@ -133,11 +133,15 @@ run_cell() {
   prepare_cell "$rep" "$cond" "$task" "$out" || return 0
 
   local target_line comment_id thread_id comment_node_id text expected_body
+  if [ "$task" = T3 ]; then
+    target_line="0\t\t\t\t"
+  else
   target_line="$(awk -F'\t' -v i="$tidx" '$1==i' "$TARGETS")"
   comment_id="$(cut -f2 <<<"$target_line")"
   thread_id="$(cut -f3 <<<"$target_line")"
   comment_node_id="$(cut -f4 <<<"$target_line")"
   text="$(cut -f5- <<<"$target_line")"
+  fi
 
   local repo="$GH_REPO" pr=1
 
@@ -149,6 +153,7 @@ run_cell() {
   prompt="${prompt//\{\{MARK\}\}/$mark}"
   prompt="$(printf '%b' "$prompt")"
   case "$task" in
+    T3) expected_body="" ;;
     T7) expected_body="Fixed in 1312fe2 — bounded the loop at 5 attempts. (ref $mark)" ;;
     T8) expected_body="CI is green on this branch: lint, test and scan all passed. (ref $mark)" ;;
     T9) expected_body="" ;;

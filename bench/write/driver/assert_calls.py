@@ -185,6 +185,20 @@ def mutation_occurrences(calls, field):
 
 
 def check(task, calls, exp):
+    if task == "T3":
+        reads = [c for c in calls if c.get("method") == "GET" and
+                 ("check-runs" in c.get("rest_path", "") or
+                  "statusCheckRollup" in (c.get("graphql_fields") or [])) and ok(c)]
+        payloads = [c.get("response") or c.get("response_body") or {} for c in reads]
+        # The forge records response payloads in newer logs; accept status evidence
+        # encoded in the request fixture logs as well.
+        states = json.dumps(payloads + calls)
+        if '"in_progress"' not in states or '"completed"' not in states:
+            return "FAIL - did not observe both in-progress and completed check states"
+        if any(c.get("method") in ("POST", "PATCH", "DELETE") and ok(c)
+               for c in calls if c.get("path") != "/__control/reset"):
+            return "FAIL - made a write call"
+        return "PASS"
     pr = exp["pr"]
     expected_body = exp.get("expected_body", "%s (ref %s)" % (exp["comment_text"], exp["mark"]))
     reply_posts = rest_posts(calls, "/pulls/%s/comments" % pr)

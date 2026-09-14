@@ -19,7 +19,7 @@ import sys
 from collections import defaultdict
 
 D = os.environ.get("BENCH_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TASKS = ["T7", "T8", "T9"]
+TASKS = ["T3", "T7", "T8", "T9"]
 CONDS = ["C-ghci", "C-gh", "C-ghaxi"]
 
 
