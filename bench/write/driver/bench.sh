@@ -12,14 +12,27 @@
 #     write-side failure that matters -- "replied to the thread" when the agent
 #     actually posted a top-level comment -- is invisible in prose.
 #
-# Usage: bench.sh --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
+# Usage: bench.sh [--redo] --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
 set -uo pipefail
 
+CALLER_PWD="$PWD"
 D="${BENCH_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+D="$(cd "$D" && pwd)"
 FORGE="${MOCK_FORGE:-$D/../../tests/mock-forge}"
 REPO_ROOT="$(git -C "$D" rev-parse --show-toplevel)"
 GHCI_VERSION=""
-if [ "${1:-}" = --ghci ]; then GHCI_VERSION="${2:-}"; shift 2; fi
+REDO=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --ghci)
+      [ "$#" -ge 2 ] || { echo "bench: --ghci requires a version" >&2; exit 2; }
+      GHCI_VERSION="$2"; shift 2 ;;
+    --redo) REDO=1; shift ;;
+    --) shift; break ;;
+    -*) echo "bench: unknown option $1" >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
 bash "$REPO_ROOT/bench/materialize-ghci.sh" "$REPO_ROOT" "$D/payload" "$GHCI_VERSION" || exit 1
 PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
 NO_GHAXI_PATH=""
@@ -44,6 +57,9 @@ RESULTS="${BENCH_RESULTS:-$D/work/results.tier1.tsv}"
 RUNROOT="${BENCH_RUNROOT:-$D/runs/current}"
 TARGETS="${BENCH_TARGETS:-$D/tasks/targets.tier1.tsv}"
 FORGE_RUN="$D/forge-run"
+case "$RESULTS" in /*) ;; *) RESULTS="$CALLER_PWD/$RESULTS" ;; esac
+case "$RUNROOT" in /*) ;; *) RUNROOT="$CALLER_PWD/$RUNROOT" ;; esac
+case "$TARGETS" in /*) ;; *) TARGETS="$CALLER_PWD/$TARGETS" ;; esac
 mkdir -p "$(dirname "$RESULTS")" "$RUNROOT"
 
 REP_START="${1:-1}"; REP_END="${2:-1}"
@@ -64,6 +80,27 @@ cond_index() {
   case "$1" in C-ghci) echo 0 ;; C-gh) echo 1 ;; C-ghaxi) echo 2 ;; esac
 }
 
+prepare_cell() {
+  local rep="$1" cond="$2" task="$3" out="$4"
+  if ! awk -F'\t' -v rep="$rep" -v cond="$cond" -v task="$task" \
+      'NR > 1 && $2 == rep && $3 == cond && $4 == task { found=1 } END { exit !found }' \
+      "$RESULTS"; then
+    return 0
+  fi
+  if [ "$REDO" -eq 0 ]; then
+    echo "[rep$rep $cond $task] already recorded; skipping"
+    return 1
+  fi
+  local results_tmp
+  results_tmp="$(mktemp "${RESULTS}.XXXXXX")"
+  awk -F'\t' -v rep="$rep" -v cond="$cond" -v task="$task" \
+    'NR == 1 || !($2 == rep && $3 == cond && $4 == task)' "$RESULTS" > "$results_tmp"
+  mv "$results_tmp" "$RESULTS"
+  rm -rf "$out"
+  echo "[rep$rep $cond $task] replacing recorded cell"
+  return 0
+}
+
 rm -rf "$FORGE_RUN"; mkdir -p "$FORGE_RUN"
 forge_env="$(bash "$FORGE/forge.sh" start "$FORGE_RUN")" || { echo "driver: mock forge failed to start" >&2; exit 1; }
 eval "$forge_env"
@@ -74,6 +111,9 @@ run_cell() {
   local rep="$1" cond="$2" task="$3" offset="$4" prompt_tpl="$5"
   local ci; ci="$(cond_index "$cond")"
   local tidx=$(( (offset + (rep - 1) * 3 + ci) % 15 ))
+
+  local out="$RUNROOT/rep$rep/$cond/$task"
+  prepare_cell "$rep" "$cond" "$task" "$out" || return 0
 
   local target_line comment_id thread_id comment_node_id text expected_body
   target_line="$(awk -F'\t' -v i="$tidx" '$1==i' "$TARGETS")"
@@ -97,7 +137,6 @@ run_cell() {
     T9) expected_body="" ;;
   esac
 
-  local out="$RUNROOT/rep$rep/$cond/$task"
   mkdir -p "$out"
   jq -n --arg pr "$pr" --arg mark "$mark" --arg cid "$comment_id" \
         --arg tid "$thread_id" --arg comment_node_id "$comment_node_id" --arg text "$text" \
@@ -129,7 +168,10 @@ JSON
       ;;
   esac
 
-  bash "$FORGE/forge.sh" reset "$FORGE_RUN"
+  bash "$FORGE/forge.sh" reset "$FORGE_RUN" || {
+    echo "driver: mock forge reset failed for rep$rep $cond $task" >&2
+    exit 1
+  }
 
   local t0 t1 rc
   t0=$(date +%s%3N)

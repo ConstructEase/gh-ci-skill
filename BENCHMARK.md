@@ -78,7 +78,9 @@ python3 bench/write/driver/mktable.py bench/write/work/aggregate.1.3.0.json
 ```
 
 The separate `BENCH_RESULTS` and `BENCH_RUNROOT` paths prevent version runs from
-being appended together. The retained
+being appended together. A resumed command skips any already-recorded
+repeat/condition/task cell. Pass `--redo` before the positional arguments to remove
+that cell's result row and run directory and execute it again. The retained
 rerun cost was $15.02 ($8.01 read and $7.01 write), below the $20 stop boundary.
 Known limitations are live read-fixture drift, Actions log retention, and the
 300-character command-summary cutoff presented to the judge.

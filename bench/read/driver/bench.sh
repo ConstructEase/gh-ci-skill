@@ -3,13 +3,26 @@
 # Runs (task x condition x repeat) agent runs via `claude -p --output-format stream-json`,
 # parses usage from the stream, and grades each run with an LLM judge.
 #
-# Usage: bench.sh --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
+# Usage: bench.sh [--redo] --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
 set -uo pipefail
 
+CALLER_PWD="$PWD"
 D="${BENCH_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+D="$(cd "$D" && pwd)"
 REPO_ROOT="$(git -C "$D" rev-parse --show-toplevel)"
 GHCI_VERSION=""
-if [ "${1:-}" = --ghci ]; then GHCI_VERSION="${2:-}"; shift 2; fi
+REDO=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --ghci)
+      [ "$#" -ge 2 ] || { echo "bench: --ghci requires a version" >&2; exit 2; }
+      GHCI_VERSION="$2"; shift 2 ;;
+    --redo) REDO=1; shift ;;
+    --) shift; break ;;
+    -*) echo "bench: unknown option $1" >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
 bash "$REPO_ROOT/bench/materialize-ghci.sh" "$REPO_ROOT" "$D/payload" "$GHCI_VERSION" || exit 1
 PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
 
@@ -38,6 +51,8 @@ TASK_FILTER="${3:-}"; COND_FILTER="${4:-}"
 CONDS=(C-ghci C-gh C-ghaxi)
 RESULTS="${BENCH_RESULTS:-$D/work/results.tsv}"
 RUNROOT="${BENCH_RUNROOT:-$D/runs/current}"
+case "$RESULTS" in /*) ;; *) RESULTS="$CALLER_PWD/$RESULTS" ;; esac
+case "$RUNROOT" in /*) ;; *) RUNROOT="$CALLER_PWD/$RUNROOT" ;; esac
 mkdir -p "$(dirname "$RESULTS")" "$RUNROOT"
 if [ ! -f "$RESULTS" ]; then
   printf 'rep\tcond\ttask\texit\twall_ms\tapi_calls\ttool_calls\tin_tok\tcache_read\tcache_write\tout_tok\tverdict\tagent_usd\tjudge_usd\n' > "$RESULTS"
@@ -48,9 +63,31 @@ shuffle_conds() {
   printf '%s\n' "${CONDS[@]}" | awk -v seed="$1" 'BEGIN{srand(seed)} {print rand()"\t"$0}' | sort -k1,1 | cut -f2
 }
 
+prepare_cell() {
+  local rep="$1" cond="$2" task="$3" out="$4"
+  if ! awk -F'\t' -v rep="$rep" -v cond="$cond" -v task="$task" \
+      'NR > 1 && $1 == rep && $2 == cond && $3 == task { found=1 } END { exit !found }' \
+      "$RESULTS"; then
+    return 0
+  fi
+  if [ "$REDO" -eq 0 ]; then
+    echo "[rep$rep $cond $task] already recorded; skipping"
+    return 1
+  fi
+  local results_tmp
+  results_tmp="$(mktemp "${RESULTS}.XXXXXX")"
+  awk -F'\t' -v rep="$rep" -v cond="$cond" -v task="$task" \
+    'NR == 1 || !($1 == rep && $2 == cond && $3 == task)' "$RESULTS" > "$results_tmp"
+  mv "$results_tmp" "$RESULTS"
+  rm -rf "$out"
+  echo "[rep$rep $cond $task] replacing recorded cell"
+  return 0
+}
+
 run_cell() {
   local rep="$1" cond="$2" task="$3" repo="$4" prompt="$5"
   local out="$RUNROOT/rep$rep/$cond/$task"
+  prepare_cell "$rep" "$cond" "$task" "$out" || return 0
   mkdir -p "$out"
   local ws="$D/work/$rep-$cond-$task"
   rm -rf "$ws"; mkdir -p "$ws/.claude"
