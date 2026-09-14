@@ -49,6 +49,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gql  # noqa: E402  (same directory; this file is a test fixture, not a package)
 
 DEFAULT_SEED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seed.json")
+CHECK_FLIP_SECONDS = 60
 
 
 class ForgeState:
@@ -72,7 +73,6 @@ class ForgeState:
         self._id_state = int(self.data.get("id_seed", 20260911))
         self.calls = []
         self.check_observed_at = None
-        self.check_flip_seconds = float(os.environ.get("FORGE_CHECK_FLIP_SECONDS", "60"))
         if self.log_path:
             open(self.log_path, "w").close()
 
@@ -113,7 +113,7 @@ class ForgeState:
     def check_runs(self):
         if self.check_observed_at is None:
             self.check_observed_at = time.monotonic()
-        flipped = time.monotonic() - self.check_observed_at >= self.check_flip_seconds
+        flipped = time.monotonic() - self.check_observed_at >= CHECK_FLIP_SECONDS
         return [dict(c, **({"status": "completed", "conclusion": "failure"}
                            if c.get("name") == "scan_ruby" and flipped else {}))
                 for c in self.data.get("check_runs", [])]
@@ -270,6 +270,18 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
                 return
             runs = st.check_runs()
             self._send(200, {"total_count": len(runs), "check_runs": runs})
+            return
+
+        m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/check-runs/(\d+)", path)
+        if m and method == "GET":
+            if (m.group(1), m.group(2)) != (d["owner"], d["repo"]):
+                self._error(404, "Not Found")
+                return
+            check = next((c for c in st.check_runs() if c["id"] == int(m.group(3))), None)
+            if check is None:
+                self._error(404, "Not Found")
+                return
+            self._send(200, check)
             return
 
         # POST /repos/{o}/{r}/pulls/{n}/comments  -- reply (in_reply_to) or new thread
@@ -527,9 +539,6 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             errors.append("Could not resolve to a node with the global id of "
                           "'%s'" % node_id)
             return None
-
-        def status_check_rollup(args):
-            return {"nodes": [_check_node(c) for c in self.state.check_runs()]}
 
         def toggle(resolved, field):
             def run(args):
@@ -829,12 +838,21 @@ def _thread_node(d, t):
 
 
 def _check_node(c):
-    return {"__typename": "CheckRun", "name": c["name"], "status": c["status"],
-            "conclusion": c.get("conclusion"), "detailsUrl": c.get("details_url")}
+    conclusion = c.get("conclusion")
+    return {"__typename": "CheckRun", "name": c["name"], "status": c["status"].upper(),
+            "conclusion": conclusion.upper() if conclusion else None,
+            "detailsUrl": c.get("details_url")}
+
+
+def _check_rollup(checks):
+    nodes = [_check_node(c) for c in checks]
+    return dict(_connection(nodes), contexts=_connection(nodes))
 
 
 def _pull_node(d, checks=None):
     p = d["pull"]
+    checks = d.get("check_runs", []) if checks is None else checks
+    rollup = _check_rollup(checks)
     url = "https://github.com/%s/%s/pull/%d" % (d["owner"], d["repo"], p["number"])
     return {
         "__typename": "PullRequest",
@@ -862,12 +880,11 @@ def _pull_node(d, checks=None):
         "comments": _connection([_issue_comment_node(d, c) for c in d["issue_comments"]]),
         "reviews": _connection([]),
         "reviewRequests": _connection([]),
-        "commits": _connection([{"commit": {"statusCheckRollup":
-            {"contexts": [_check_node(c) for c in (checks or d.get("check_runs", []))]}}}]),
+        "commits": _connection([{"commit": {"statusCheckRollup": rollup}}]),
         "files": _connection([]),
         "labels": _connection([]),
         "assignees": _connection([]),
-        "statusCheckRollup": None,
+        "statusCheckRollup": rollup,
         "reviewThreads": _connection([_thread_node(d, t) for t in d["threads"]]),
     }
 

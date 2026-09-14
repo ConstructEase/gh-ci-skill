@@ -160,6 +160,14 @@ These four version tables use one schema. Read success is the judge result; writ
 | T9 | `gh` | call 5/5; judge 5/5 | 107,279 (106,773–107,362) | 96,873 | 10,400 | 6 | 593 | 9.1 | 3 | 2 |
 | T9 | gh-axi | call 5/5; judge 5/5 | 674,866 (569,713–852,212) | 651,471 | 23,363 | 32 | 5,416 | 67.6 | 16 | 15 |
 
+#### Corrected gh-axi write rerun (1.3.2)
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T7 | gh-axi | call 5/5; judge 5/5 | 314,357 (312,165–356,625) | 292,985 | 21,255 | 14 | 1,405 | 21.5 | 7 | 6 |
+| T8 | gh-axi | call 5/5; judge 4/5 | 212,748 (209,522–214,147) | 194,999 | 17,728 | 10 | 682 | 15.4 | 5 | 4 |
+| T9 | gh-axi | call 5/5; judge 5/5 | 558,884 (462,174–633,362) | 534,401 | 23,611 | 24 | 3,097 | 55.3 | 12 | 11 |
+
 The changes target turn cost: locate-and-run removes discovery, while PR-number check
 references, mergeability fields, and bounded failed logs remove fallback turns/context.
 gh-ci total input fell on T2, T4, T5, T6 and on T7 and T9, rose slightly on T1, and rose on T8 (147,032 → 205,542) where three of five runs hit the trailing-flag defect and re-posted; plain gh and gh-axi were unchanged within run-to-run noise.
@@ -204,22 +212,23 @@ the writes occurred.
 
 | Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
 |---|---|---|---|---|---|---|---|---|---|---|
-| T3 | gh-ci | 4/5 | 529,640 (471,813–1,072,460) | — | — | — | 3,604 | 109.8 | 11 | 10 |
-| T3 | `gh` | 5/5 | 153,307 (153,254–153,348) | — | — | — | 846 | 73.3 | 4 | 3 |
-| T3 | gh-axi | 2/5 | 301,613 (295,338–342,072) | — | — | — | 2,026 | 72.1 | 7 | 6 |
+| T3 | gh-ci | call 5/5; judge 5/5 | 128,140 (83,380–129,283) | 109,529 | 18,605 | 6 | 822 | 74.0 | 3 | 2 |
+| T3 | `gh` | call 5/5; judge 4/5 | 152,906 (152,720–152,965) | 139,219 | 13,679 | 8 | 828 | 71.2 | 4 | 3 |
+| T3 | gh-axi | call 1/5; judge 1/5 | 342,988 (299,454–551,742) | 324,725 | 18,547 | 16 | 2,620 | 58.5 | 8 | 7 |
 
-T3 shows the named-check wait is observable: gh-ci and gh-axi made repeated
-polls against the in-flight check, while wall time is dominated by the 60-second
-flip. The gh-axi T7–T9 corrected rerun is retained in
-`bench/write/results/1.3.2-ghaxi-rerun/`; its call assertions passed 15/15.
-The rerun also confirms `gh pr checks --watch` and `gh run watch` are valid
-all-checks waits, not named-check waits.
+T3 shows the named-check wait is observable. gh-ci used one check-wait command;
+plain `gh` polled in the foreground. In four of five runs, gh-axi backgrounded
+its own poll and returned without reporting a conclusion. `gh pr checks --watch`
+and `gh run watch` are valid all-check waits, but neither waits for only one named
+check.
 
 Corrections: the original 1.3.0 gh-axi rows remain unchanged; the corrected
 gh-axi rows use the mock without GH_REPO/REPO_NWO. gh-axi still rejects an
 explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results were
-unaffected. T3 judge verdicts were rechecked with fuller command and call-log
-evidence; original judge outputs remain retained.
+unaffected. The retained gh-axi T3 runs never requested the single-check REST
+route and did receive nested rollup data, so they did not need rerunning. T3
+judge verdicts were rechecked with fuller command and call-log evidence; original
+judge outputs remain retained.
 
 The write-side half uses the local recording mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced

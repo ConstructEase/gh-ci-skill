@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gh-ci benchmark driver — write-side half (T3 check wait, T7 reply, T8 comment, T9 resolve).
+# gh-ci benchmark driver — write-side tasks selected by BENCH_TASKS.
 #
 # Same rig as the read half: one `claude -p --output-format stream-json` per
 # (task x condition x repeat), usage parsed from the stream, an LLM judge
@@ -36,6 +36,7 @@ done
 
 REP_START="${1:-1}"; REP_END="${2:-1}"
 TASK_FILTER="${3:-}"; COND_FILTER="${4:-}"
+TASK_FILE="${BENCH_TASKS:-$D/tasks/tasks.tsv}"
 
 if [ -z "${BENCH_ANSWER_KEYS:-}" ]; then
   echo "bench: BENCH_ANSWER_KEYS must point to the private answer-key directory" >&2
@@ -51,7 +52,7 @@ while IFS=$'\t' read -r task _; do
     echo "bench: answer key missing or empty: $ANSWER_KEYS/write/$task.txt" >&2
     exit 2
   }
-done < "$D/tasks/tasks.tsv"
+done < "$TASK_FILE"
 
 bash "$REPO_ROOT/bench/materialize-ghci.sh" "$REPO_ROOT" "$D/payload" "$GHCI_VERSION" || exit 1
 PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
@@ -302,5 +303,5 @@ for rep in $(seq "$REP_START" "$REP_END"); do
       [ -n "$COND_FILTER" ] && [ "$cond" != "$COND_FILTER" ] && continue
       run_cell "$rep" "$cond" "$task" "$offset" "$prompt"
     done
-  done < "$D/tasks/tasks.tsv"
+  done < "$TASK_FILE"
 done

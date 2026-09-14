@@ -68,9 +68,9 @@ GH_REPO/REPO_NWO environment issue; gh-axi may still retry when given an
 explicit `--repo`/`-R` to `api`. The read tier was unaffected.
 
 T3 uses a local in-flight check: `scan_ruby` starts `in_progress` and flips to
-`completed`/`failure` after `FORGE_CHECK_FLIP_SECONDS` (default 60) from its
-first observation after reset. `gh pr checks --watch` and `gh run watch` wait on
-all checks rather than one named check; runs using those commands are valid.
+`completed`/`failure` after 60 seconds from its first observation after reset.
+`gh pr checks --watch` and `gh run watch` wait on all checks rather than one
+named check; runs using those commands are valid.
 
 Prerequisites are Bash, git, `gh`, `jq`, Python 3, Claude Code, and the development
 requirements listed by `tests/mock-forge/README.md`. From the repository root:
@@ -103,6 +103,15 @@ BENCH_ANSWER_KEYS=/path/to/private/keys \
 python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.0.tsv \
   bench/write/work/aggregate.1.3.0.json
 python3 bench/mktable.py bench/write/work/aggregate.1.3.0.json
+
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_TASKS=bench/write/tasks/tasks.named-check.tsv \
+  BENCH_RESULTS=bench/write/work/results.1.3.2-t3.tsv \
+  BENCH_RUNROOT=bench/write/runs/1.3.2-t3 \
+  bench/write/driver/bench.sh --ghci 1.3.2 1 5
+python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.2-t3.tsv \
+  bench/write/work/aggregate.1.3.2-t3.json
+python3 bench/mktable.py bench/write/work/aggregate.1.3.2-t3.json
 ```
 
 The separate `BENCH_RESULTS` and `BENCH_RUNROOT` paths prevent version runs from
@@ -186,3 +195,30 @@ are medians.
 | T9 | gh-ci | call 5/5; judge 4/5 | 125,978 (125,977–126,005) | 108,550 | 17,441 | 6 | 833 | 10.5 | 3 | 2 |
 | T9 | `gh` | call 5/5; judge 5/5 | 107,279 (106,773–107,362) | 96,873 | 10,400 | 6 | 593 | 9.1 | 3 | 2 |
 | T9 | gh-axi | call 5/5; judge 5/5 | 674,866 (569,713–852,212) | 651,471 | 23,363 | 32 | 5,416 | 67.6 | 16 | 15 |
+
+## Corrected gh-axi write rerun 1.3.2
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T7 | gh-axi | call 5/5; judge 5/5 | 314,357 (312,165–356,625) | 292,985 | 21,255 | 14 | 1,405 | 21.5 | 7 | 6 |
+| T8 | gh-axi | call 5/5; judge 4/5 | 212,748 (209,522–214,147) | 194,999 | 17,728 | 10 | 682 | 15.4 | 5 | 4 |
+| T9 | gh-axi | call 5/5; judge 5/5 | 558,884 (462,174–633,362) | 534,401 | 23,611 | 24 | 3,097 | 55.3 | 12 | 11 |
+
+## Named-check wait follow-up 1.3.2
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T3 | gh-ci | call 5/5; judge 5/5 | 128,140 (83,380–129,283) | 109,529 | 18,605 | 6 | 822 | 74.0 | 3 | 2 |
+| T3 | `gh` | call 5/5; judge 4/5 | 152,906 (152,720–152,965) | 139,219 | 13,679 | 8 | 828 | 71.2 | 4 | 3 |
+| T3 | gh-axi | call 1/5; judge 1/5 | 342,988 (299,454–551,742) | 324,725 | 18,547 | 16 | 2,620 | 58.5 | 8 | 7 |
+
+gh-ci used one check-wait command, while plain `gh` polled in the foreground.
+In four of five runs, gh-axi backgrounded its own poll and returned without
+reporting a conclusion. The retained gh-axi T3 runs never requested the
+single-check REST route and did receive nested rollup data, so they did not need
+rerunning.
+
+Corrections: the original 1.3.0 gh-axi rows above are preserved. The corrected
+rows use the mock without GH_REPO/REPO_NWO; the environment artifact had caused
+gh-axi's explicit `--repo`/`-R` flags on `api` to be rejected and retried. The
+read tier was unaffected.
