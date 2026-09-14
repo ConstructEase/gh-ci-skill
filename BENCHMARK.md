@@ -29,15 +29,17 @@ five repeats; raw TSV rows and JSON aggregates remain under each version directo
 
 ## Frozen versions and fixtures
 
-The `--ghci` option accepts 1.2.3, 1.2.4, or 1.3.0 and maps them to repository
-commits recorded in the materializer. At startup the driver materializes that commit’s
+The `--ghci` option accepts 1.2.3, 1.2.4, 1.3.0, or 1.3.2 and maps them to
+repository commits recorded in the materializer. At startup the driver materializes that commit’s
 `gh-ci/SKILL.md` and `gh-ci/resources/ci.sh` with `git show` into an ignored payload
 directory. The materialized skill is the gh-ci condition; this prevents a checkout’s
 current skill from silently changing a historical run. `bench/mkpathshim.sh` builds
 the filtered executable directory, and each driver refuses to start unless `claude`
 still resolves and `gh-axi` does not resolve for the gh-ci/plain-gh conditions.
 The result tables select 1.2.3 for the read baseline, 1.2.4 for the write baseline,
-and 1.3.0 for both reruns.
+and 1.3.0 for the historical read/write reruns. Those 1.3.0 reruns pin commit
+`cf252806` and were run on 2026-09-12. The 1.3.2 named-check and corrected gh-axi
+follow-up pins commit `9594571c` and was run on 2026-09-14.
 Use a full clone when possible. In a shallow clone the materializer first tries the
 matching version tag, then fetches the pinned commit from `origin` at depth 1 into
 the ignored payload cache. To obtain the same history manually, run

@@ -53,7 +53,7 @@ permission prompts:
 
 | Condition | Instruction given to the agent | Environment |
 |---|---|---|
-| gh-ci | The `gh-ci/SKILL.md` version named by each table: 1.2.3 read baseline, 1.2.4 write baseline, 1.3.0 reruns | Matching `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
+| gh-ci | The `gh-ci/SKILL.md` version named by each table: 1.2.3 read baseline, 1.2.4 write baseline, 1.3.0 historical reruns, 1.3.2 follow-up | Matching `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
 | `gh` | a minimal "you have the `gh` CLI, use it" note (189 B) | no skill; `gh-axi` removed from `PATH` |
 | gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
 
@@ -75,9 +75,11 @@ calls are distinct assistant message ids, token totals come from the terminal
 inter-quartile ranges** are reported across the five repeats, never means.
 
 **Pins** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 for the read baseline,
-1.2.4 for the write baseline, and 1.3.0 for both reruns · Claude Code CLI 2.1.267 ·
-agent and judge model `claude-sonnet-5` · read-baseline date **2026-09-11** · rerun
-date **2026-09-12**. The read baseline used about 100 GitHub core REST requests;
+1.2.4 for the write baseline, 1.3.0 (`cf252806`) for the historical read/write
+reruns, and 1.3.2 (`9594571c`) for the named-check and corrected gh-axi follow-up ·
+Claude Code CLI 2.1.267 · agent and judge model `claude-sonnet-5` · read-baseline
+date **2026-09-11** · historical rerun date **2026-09-12** · 1.3.2 follow-up
+date **2026-09-14**. The read baseline used about 100 GitHub core REST requests;
 the write tiers used the local mock.
 
 ### Results
