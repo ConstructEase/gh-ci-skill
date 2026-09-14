@@ -42,10 +42,47 @@ def gql(fields, variables=None, status=200, errors=False, arguments=None,
     return call
 
 
+def check_read(response, graphql=False):
+    if graphql:
+        call = gql(["statusCheckRollup"])
+    else:
+        call = rest("/repos/o/r/check-runs/501", {}, status=200, method="GET")
+    call["response"] = response
+    return call
+
+
 REPLY = "/repos/o/r/pulls/1/comments"
 ISSUE = "/repos/o/r/issues/1/comments"
 
 CASES = [
+    ("T3", [
+        check_read({"id": 501, "name": "scan_ruby", "status": "in_progress"}),
+        check_read({"id": 501, "name": "scan_ruby", "status": "completed"}),
+    ], "PASS"),
+    ("T3", [
+        check_read({"check_runs": [{"name": "scan_ruby", "status": "in_progress"}]}),
+        check_read({"check_runs": [{"name": "scan_ruby", "status": "completed"}]}),
+    ], "PASS"),
+    ("T3", [
+        check_read({"data": {"repository": {"pullRequest": {
+            "statusCheckRollup": {"nodes": [
+                {"name": "scan_ruby", "status": "IN_PROGRESS"}]}}}}}, graphql=True),
+        check_read({"data": {"repository": {"pullRequest": {
+            "statusCheckRollup": {"nodes": [
+                {"name": "scan_ruby", "status": "COMPLETED"}]}}}}}, graphql=True),
+    ], "PASS"),
+    ("T3", [
+        check_read({"data": {"repository": {"pullRequest": {"commits": {"nodes": [
+            {"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+                {"name": "scan_ruby", "status": "IN_PROGRESS"}]}}}}]}}}}}, graphql=True),
+        check_read({"data": {"repository": {"pullRequest": {"commits": {"nodes": [
+            {"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+                {"name": "scan_ruby", "status": "COMPLETED"}]}}}}]}}}}}, graphql=True),
+    ], "PASS"),
+    ("T3", [
+        check_read({"id": 501, "name": "scan_ruby", "status": "in_progress"}),
+    ], "FAIL"),
+
     # --- T7: reply into the right thread ---
     ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489})], "PASS"),
     ("T7", [rest("/repos/o/r/pulls/1/comments/3408268489/replies", {"body": BODY})], "PASS"),

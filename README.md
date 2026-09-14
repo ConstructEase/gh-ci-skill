@@ -223,12 +223,14 @@ and `gh run watch` are valid all-check waits, but neither waits for only one nam
 check.
 
 Corrections: the original 1.3.0 gh-axi rows remain unchanged; the corrected
-gh-axi rows use the mock without GH_REPO/REPO_NWO. gh-axi still rejects an
-explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results were
-unaffected. The retained gh-axi T3 runs never requested the single-check REST
-route and did receive nested rollup data, so they did not need rerunning. T3
-judge verdicts were rechecked with fuller command and call-log evidence; original
-judge outputs remain retained.
+gh-axi rows run without `GH_REPO`. The agent process receives `REPO_NWO` as the
+repository identity a real clone would provide because `gh` cannot match the
+mock remote's port to `GH_HOST`; plain `gh` and gh-axi ignore it. gh-axi still
+rejects an explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results
+were unaffected. The retained gh-axi T3 runs never requested the single-check
+REST route and did receive nested rollup data, so they did not need rerunning.
+T3 judge verdicts were rechecked with fuller command and call-log evidence;
+original judge outputs remain retained.
 
 The write-side half uses the local recording mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced

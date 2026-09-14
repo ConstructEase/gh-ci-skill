@@ -184,21 +184,27 @@ def mutation_occurrences(calls, field):
     return out
 
 
+def check_states(payload):
+    if isinstance(payload, list):
+        for item in payload:
+            yield from check_states(item)
+        return
+    if not isinstance(payload, dict):
+        return
+    if payload.get("name") == "scan_ruby" and payload.get("status") is not None:
+        yield str(payload["status"]).lower()
+    for value in payload.values():
+        yield from check_states(value)
+
+
 def check(task, calls, exp):
     if task == "T3":
         reads = [c for c in calls if
                  (c.get("method") == "GET" or "statusCheckRollup" in (c.get("graphql_fields") or [])) and
                  ("check-runs" in c.get("rest_path", "") or
                   "statusCheckRollup" in (c.get("graphql_fields") or [])) and ok(c)]
-        payloads = [c.get("response") or c.get("response_body") or {} for c in reads]
-        scan_states = []
-        for payload in payloads:
-            items = payload.get("check_runs", []) if isinstance(payload, dict) else []
-            if isinstance(payload, dict) and "contexts" in payload:
-                items = payload["contexts"]
-            for item in items:
-                if item.get("name") == "scan_ruby":
-                    scan_states.append(item.get("status"))
+        scan_states = [state for call in reads
+                       for state in check_states(call.get("response") or {})]
         if "in_progress" not in scan_states or "completed" not in scan_states:
             return "FAIL - did not observe both in-progress and completed check states"
         if any(c.get("method") in ("PATCH", "DELETE") and ok(c)

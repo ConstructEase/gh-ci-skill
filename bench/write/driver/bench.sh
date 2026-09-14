@@ -120,7 +120,7 @@ prepare_cell() {
 }
 
 rm -rf "$FORGE_RUN"; mkdir -p "$FORGE_RUN"
-forge_env="$(FORGE_NO_REPO_ENV=1 bash "$FORGE/forge.sh" start "$FORGE_RUN")" || { echo "driver: mock forge failed to start" >&2; exit 1; }
+forge_env="$(bash "$FORGE/forge.sh" start "$FORGE_RUN")" || { echo "driver: mock forge failed to start" >&2; exit 1; }
 eval "$forge_env"
 unset GH_REPO REPO_NWO
 trap 'bash "$FORGE/forge.sh" stop "$FORGE_RUN"' EXIT

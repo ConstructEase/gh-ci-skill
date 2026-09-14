@@ -64,7 +64,8 @@ The 1.3.2 named-check follow-up contains 15 T3 cells and a corrected 15-cell
 gh-axi T7–T9 rerun under `bench/write/results/1.3.2-ghaxi-rerun/`. T3 judge
 grading was re-run with untruncated commands and compact call-log evidence;
 the original judge files are retained. The corrected rerun isolates the
-GH_REPO/REPO_NWO environment issue; gh-axi may still retry when given an
+`GH_REPO` environment issue while supplying `REPO_NWO` to stand in for the
+repository identity from a real clone; gh-axi may still retry when given an
 explicit `--repo`/`-R` to `api`. The read tier was unaffected.
 
 T3 uses a local in-flight check: `scan_ruby` starts `in_progress` and flips to
@@ -219,6 +220,8 @@ single-check REST route and did receive nested rollup data, so they did not need
 rerunning.
 
 Corrections: the original 1.3.0 gh-axi rows above are preserved. The corrected
-rows use the mock without GH_REPO/REPO_NWO; the environment artifact had caused
-gh-axi's explicit `--repo`/`-R` flags on `api` to be rejected and retried. The
-read tier was unaffected.
+rows run without `GH_REPO`. The agent process receives `REPO_NWO` because `gh`
+strips the port when matching the loopback remote against `GH_HOST`, so the mock
+remote cannot supply the repository identity that a real clone would; plain
+`gh` and gh-axi ignore it. gh-axi's explicit `--repo`/`-R` flags on `api` may
+still be rejected and retried. The read tier was unaffected.
