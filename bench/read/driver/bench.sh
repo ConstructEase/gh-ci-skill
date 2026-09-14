@@ -196,11 +196,7 @@ JSON
   local judge_cost
   judge_cost=$(jq -r 'select(.type=="result") | .total_cost_usd // 0' "$out/judge_stream.jsonl" 2>/dev/null | tail -1)
   [ -z "$judge_cost" ] && judge_cost=0
-  if grep -qiE '^[^A-Za-z]*PASS' "$out/judge.txt" 2>/dev/null; then verdict=PASS
-  elif grep -qiE '^[^A-Za-z]*FAIL' "$out/judge.txt" 2>/dev/null; then verdict=FAIL
-  elif grep -qi 'PASS' "$out/judge.txt" 2>/dev/null; then verdict=PASS
-  elif grep -qi 'FAIL' "$out/judge.txt" 2>/dev/null; then verdict=FAIL
-  fi
+  verdict="$(python3 "$REPO_ROOT/bench/parse-judge-verdict.py" "$out/judge.txt")"
 
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$rep" "$cond" "$task" "$rc" "$wall" \

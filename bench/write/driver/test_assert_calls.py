@@ -22,8 +22,8 @@ EXP = {"pr": "1", "mark": "MARK1", "comment_id": "3408268489",
 BODY = "Fixed it. (ref MARK1)"
 
 
-def rest(path, body, status=201):
-    return {"method": "POST", "path": "/api/v3" + path, "rest_path": path,
+def rest(path, body, status=201, method="POST"):
+    return {"method": method, "path": "/api/v3" + path, "rest_path": path,
             "body": body, "status": status}
 
 
@@ -74,6 +74,10 @@ CASES = [
             gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
     ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489}),
             gql(["unresolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
+    ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489}),
+            rest("/repos/o/r/pulls/comments/123", {}, method="DELETE")], "FAIL"),
+    ("T7", [rest(REPLY, {"body": BODY, "in_reply_to": 3408268489}),
+            rest("/repos/o/r/pulls/comments/123", {"body": "changed"}, method="PATCH")], "FAIL"),
 
     # --- T8: top-level comment ---
     ("T8", [rest(ISSUE, {"body": BODY})], "PASS"),
@@ -88,6 +92,12 @@ CASES = [
             gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
     ("T8", [rest(ISSUE, {"body": BODY}),
             gql(["unresolveReviewThread"], {"threadId": "PRRT_target"})], "FAIL"),
+    ("T8", [rest(ISSUE, {"body": BODY}),
+            rest("/repos/o/r/issues/comments/123", {}, method="DELETE")], "FAIL"),
+    ("T8", [rest(ISSUE, {"body": BODY}),
+            rest("/repos/o/r/issues/comments/123", {"body": "changed"}, method="PATCH")], "FAIL"),
+    ("T8", [rest(ISSUE, {"body": BODY}),
+            rest("/repos/o/r/issues/comments/123", {}, status=404, method="DELETE")], "PASS"),
 
     # --- T9: resolve exactly one thread ---
     ("T9", [gql(["resolveReviewThread"], {"threadId": "PRRT_target"})], "PASS"),

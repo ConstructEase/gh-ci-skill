@@ -79,6 +79,13 @@ def graphql(calls, field):
 
 
 REPLIES_PATH = re.compile(r"/pulls/(\d+)/comments/(\d+)/replies$")
+COMMENT_MUTATION_PATH = re.compile(r"/(?:pulls|issues)/comments/\d+$")
+
+
+def comment_mutations(calls):
+    return [c for c in calls
+            if c.get("method") in ("PATCH", "DELETE") and ok(c)
+            and COMMENT_MUTATION_PATH.search(c.get("rest_path", ""))]
 
 
 def replies_endpoint_calls(calls, pr):
@@ -113,6 +120,7 @@ def check(task, calls, exp):
     gql_comments = gql_comment_calls(calls)
     resolves = graphql(calls, "resolveReviewThread")
     unresolves = graphql(calls, "unresolveReviewThread")
+    comment_changes = comment_mutations(calls)
 
     if task == "T7":
         # exactly one accepted reply, into the target thread, carrying the marker
@@ -153,6 +161,8 @@ def check(task, calls, exp):
             return "FAIL - reply body was %r, expected %r" % (text, expected_body)
         if resolves or unresolves:
             return "FAIL - also changed review-thread state, which was not asked for"
+        if comment_changes:
+            return "FAIL - also edited or deleted a comment"
         return "PASS"
 
     if task == "T8":
@@ -174,6 +184,8 @@ def check(task, calls, exp):
             return "FAIL - comment body was %r, expected %r" % (text, expected_body)
         if resolves or unresolves:
             return "FAIL - also changed review-thread state, which was not asked for"
+        if comment_changes:
+            return "FAIL - also edited or deleted a comment"
         return "PASS"
 
     if task == "T9":
@@ -197,7 +209,7 @@ def check(task, calls, exp):
                     % (sorted(str(t) for t in targets), exp["thread_id"]))
         if unresolves:
             return "FAIL - also sent unresolveReviewThread, leaving the thread unresolved"
-        if reply_posts or issue_posts or gql_replies or gql_comments:
+        if reply_posts or issue_posts or gql_replies or gql_comments or comment_changes:
             return "FAIL - posted a comment, which the task forbade"
         return "PASS"
 
