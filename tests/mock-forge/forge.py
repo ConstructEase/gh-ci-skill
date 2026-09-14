@@ -255,6 +255,14 @@ class ForgeHandler(http.server.BaseHTTPRequestHandler):
             self._send(200, _repo_obj(d))
             return
 
+        m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/pulls/(\d+)/reviews", path)
+        if m and method == "GET":
+            if unknown_pull(m):
+                self._error(404, "Not Found")
+                return
+            self._send(200, [])
+            return
+
         m = re.fullmatch(r"/repos/([^/]+)/([^/]+)/commits/([^/]+)/check-runs", path)
         if m and method == "GET":
             if (m.group(1), m.group(2)) != (d["owner"], d["repo"]) or m.group(3) != d["pull"]["head_sha"]:

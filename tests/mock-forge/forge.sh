@@ -28,8 +28,10 @@ export GH_ENTERPRISE_TOKEN=mock-forge-token
 export GH_TOKEN=ghp_invalidinvalidinvalidinvalidinvalid
 export GITHUB_TOKEN=ghp_invalidinvalidinvalidinvalidinvalid
 export SSL_CERT_FILE=$dir/cert.pem
-export GH_REPO=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["owner"]+"/"+d["repo"])' "$HERE/seed.json")
-export REPO_NWO=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["owner"]+"/"+d["repo"])' "$HERE/seed.json")
+if [ "${FORGE_NO_REPO_ENV:-0}" != 1 ]; then
+  export GH_REPO=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["owner"]+"/"+d["repo"])' "$HERE/seed.json")
+  export REPO_NWO=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["owner"]+"/"+d["repo"])' "$HERE/seed.json")
+fi
 export FORGE_DIR=$dir
 export FORGE_CALLS=$dir/calls.jsonl
 ENV

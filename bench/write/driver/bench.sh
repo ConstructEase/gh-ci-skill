@@ -119,7 +119,7 @@ prepare_cell() {
 }
 
 rm -rf "$FORGE_RUN"; mkdir -p "$FORGE_RUN"
-forge_env="$(bash "$FORGE/forge.sh" start "$FORGE_RUN")" || { echo "driver: mock forge failed to start" >&2; exit 1; }
+forge_env="$(FORGE_NO_REPO_ENV=1 bash "$FORGE/forge.sh" start "$FORGE_RUN")" || { echo "driver: mock forge failed to start" >&2; exit 1; }
 eval "$forge_env"
 trap 'bash "$FORGE/forge.sh" stop "$FORGE_RUN"' EXIT
 echo "driver: recording mock at $GH_HOST"
@@ -144,7 +144,7 @@ run_cell() {
   text="$(cut -f5- <<<"$target_line")"
   fi
 
-  local repo="$GH_REPO" pr=1
+  local repo="ConstructEase/gh-ci-bench-fixture" pr=1
 
   local mark="WSB-t1-r$rep-$cond-$task"
   local prompt="$prompt_tpl"
