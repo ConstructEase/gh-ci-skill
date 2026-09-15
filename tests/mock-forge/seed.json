@@ -22,6 +22,11 @@
     "head_path": "src/auth/session.ts",
     "review_decision": "REVIEW_REQUIRED"
   },
+  "check_runs": [
+    {"id": 501, "name": "scan_ruby", "status": "in_progress", "conclusion": null, "details_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/actions/runs/501"},
+    {"id": 502, "name": "lint", "status": "completed", "conclusion": "success", "details_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/actions/runs/502"},
+    {"id": 503, "name": "test", "status": "completed", "conclusion": "success", "details_url": "https://github.com/ConstructEase/gh-ci-bench-fixture/actions/runs/503"}
+  ],
   "threads": [
     {
       "id": "PRRT_kwDOMOCKFx86JVu00",

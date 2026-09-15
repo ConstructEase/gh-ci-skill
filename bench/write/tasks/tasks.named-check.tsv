@@ -1,0 +1,1 @@
+T3	0	In the GitHub repository {{REPO}}, wait for the check run named scan_ruby on the head commit of pull request #{{PR}} to finish, then report its final conclusion. Do not wait on any other check.

@@ -184,7 +184,40 @@ def mutation_occurrences(calls, field):
     return out
 
 
+def check_states(payload):
+    if isinstance(payload, list):
+        for item in payload:
+            yield from check_states(item)
+        return
+    if not isinstance(payload, dict):
+        return
+    if payload.get("name") == "scan_ruby" and payload.get("status") is not None:
+        yield str(payload["status"]).lower()
+    for value in payload.values():
+        yield from check_states(value)
+
+
 def check(task, calls, exp):
+    if task == "T3":
+        reads = [c for c in calls if
+                 ((c.get("method") == "GET" and
+                   "check-runs" in c.get("rest_path", "")) or
+                  (c.get("method") == "POST" and
+                   c.get("path") == "/api/graphql")) and
+                 ok(c)]
+        scan_states = [state for call in reads
+                       for state in check_states(call.get("response") or {})]
+        if "in_progress" not in scan_states or "completed" not in scan_states:
+            return "FAIL - did not observe both in-progress and completed check states"
+        if any(c.get("method") in ("PATCH", "DELETE") and ok(c)
+               or (c.get("method") == "POST" and c.get("path") != "/api/graphql" and ok(c))
+               or (c.get("method") == "POST" and c.get("path") == "/api/graphql" and
+                   any(f in (c.get("graphql_fields") or []) for f in
+                       ("addComment", "addPullRequestReviewThreadReply", "addPullRequestReviewComment",
+                        "resolveReviewThread", "unresolveReviewThread")) and ok(c))
+               for c in calls if c.get("path") != "/__control/reset"):
+            return "FAIL - made a write call"
+        return "PASS"
     pr = exp["pr"]
     expected_body = exp.get("expected_body", "%s (ref %s)" % (exp["comment_text"], exp["mark"]))
     reply_posts = rest_posts(calls, "/pulls/%s/comments" % pr)

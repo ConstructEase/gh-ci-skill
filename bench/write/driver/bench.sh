@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gh-ci benchmark driver — write-side half (T7 reply, T8 comment, T9 resolve).
+# gh-ci benchmark driver — write-side tasks selected by BENCH_TASKS.
 #
 # Same rig as the read half: one `claude -p --output-format stream-json` per
 # (task x condition x repeat), usage parsed from the stream, an LLM judge
@@ -12,7 +12,7 @@
 #     write-side failure that matters -- "replied to the thread" when the agent
 #     actually posted a top-level comment -- is invisible in prose.
 #
-# Usage: bench.sh [--redo] --ghci 1.2.3|1.2.4|1.3.0 <rep-start> <rep-end> [task-filter] [cond-filter]
+# Usage: bench.sh [--redo] --ghci 1.2.3|1.2.4|1.3.0|1.3.2 <rep-start> <rep-end> [task-filter] [cond-filter]
 set -uo pipefail
 
 CALLER_PWD="$PWD"
@@ -36,6 +36,7 @@ done
 
 REP_START="${1:-1}"; REP_END="${2:-1}"
 TASK_FILTER="${3:-}"; COND_FILTER="${4:-}"
+TASK_FILE="${BENCH_TASKS:-$D/tasks/tasks.tsv}"
 
 if [ -z "${BENCH_ANSWER_KEYS:-}" ]; then
   echo "bench: BENCH_ANSWER_KEYS must point to the private answer-key directory" >&2
@@ -51,7 +52,7 @@ while IFS=$'\t' read -r task _; do
     echo "bench: answer key missing or empty: $ANSWER_KEYS/write/$task.txt" >&2
     exit 2
   }
-done < "$D/tasks/tasks.tsv"
+done < "$TASK_FILE"
 
 bash "$REPO_ROOT/bench/materialize-ghci.sh" "$REPO_ROOT" "$D/payload" "$GHCI_VERSION" || exit 1
 PAYLOAD="$D/payload/$GHCI_VERSION/gh-ci"
@@ -121,6 +122,7 @@ prepare_cell() {
 rm -rf "$FORGE_RUN"; mkdir -p "$FORGE_RUN"
 forge_env="$(bash "$FORGE/forge.sh" start "$FORGE_RUN")" || { echo "driver: mock forge failed to start" >&2; exit 1; }
 eval "$forge_env"
+unset GH_REPO REPO_NWO
 trap 'bash "$FORGE/forge.sh" stop "$FORGE_RUN"' EXIT
 echo "driver: recording mock at $GH_HOST"
 
@@ -133,13 +135,18 @@ run_cell() {
   prepare_cell "$rep" "$cond" "$task" "$out" || return 0
 
   local target_line comment_id thread_id comment_node_id text expected_body
+  target_line=""; comment_id=""; thread_id=""; comment_node_id=""; text=""; expected_body=""
+  if [ "$task" = T3 ]; then
+    target_line="0\t\t\t\t"
+  else
   target_line="$(awk -F'\t' -v i="$tidx" '$1==i' "$TARGETS")"
   comment_id="$(cut -f2 <<<"$target_line")"
   thread_id="$(cut -f3 <<<"$target_line")"
   comment_node_id="$(cut -f4 <<<"$target_line")"
   text="$(cut -f5- <<<"$target_line")"
+  fi
 
-  local repo="$GH_REPO" pr=1
+  local repo="ConstructEase/gh-ci-bench-fixture" pr=1
 
   local mark="WSB-t1-r$rep-$cond-$task"
   local prompt="$prompt_tpl"
@@ -149,6 +156,7 @@ run_cell() {
   prompt="${prompt//\{\{MARK\}\}/$mark}"
   prompt="$(printf '%b' "$prompt")"
   case "$task" in
+    T3) expected_body="" ;;
     T7) expected_body="Fixed in 1312fe2 — bounded the loop at 5 attempts. (ref $mark)" ;;
     T8) expected_body="CI is green on this branch: lint, test and scan all passed. (ref $mark)" ;;
     T9) expected_body="" ;;
@@ -162,10 +170,10 @@ run_cell() {
     > "$out/expected.json"
   printf '%s' "$prompt" > "$out/prompt.txt"
 
-  local ws="$D/work/$rep-$cond-$task"
-  rm -rf "$ws"; mkdir -p "$ws/.claude"
+  local ws; ws="$(mktemp -d "${TMPDIR:-/tmp}/gh-ci-bench.XXXXXX")"
+  mkdir -p "$ws/.claude"
   git -C "$ws" init -q
-  git -C "$ws" remote add origin "https://github.com/$repo.git"
+  git -C "$ws" remote add origin "https://$GH_HOST/$repo.git"
   if [ "$cond" = C-ghci ]; then cp "$PAYLOAD/SKILL.md" "$ws/CLAUDE.md"; else cp "$REPO_ROOT/bench/conditions/$cond.md" "$ws/CLAUDE.md"; fi
 
   local runpath="$PATH"
@@ -192,7 +200,8 @@ JSON
 
   local t0 t1 rc
   t0=$(date +%s%3N)
-  ( cd "$ws" && PATH="$runpath" timeout "$RUN_TIMEOUT" \
+  mkdir -p "$out/gh-config"
+  ( cd "$ws" && REPO_NWO="$repo" GH_CONFIG_DIR="$out/gh-config" PATH="$runpath" timeout "$RUN_TIMEOUT" \
       claude -p "$prompt" \
         --model "$MODEL" \
         --output-format stream-json --verbose \
@@ -294,5 +303,5 @@ for rep in $(seq "$REP_START" "$REP_END"); do
       [ -n "$COND_FILTER" ] && [ "$cond" != "$COND_FILTER" ] && continue
       run_cell "$rep" "$cond" "$task" "$offset" "$prompt"
     done
-  done < "$D/tasks/tasks.tsv"
+  done < "$TASK_FILE"
 done

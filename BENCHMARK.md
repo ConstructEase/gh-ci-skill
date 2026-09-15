@@ -2,15 +2,18 @@
 
 This directory retains the harness, frozen inputs, manifests, raw result rows, and
 aggregates for the gh-ci benchmark. The read tier runs T1, T2, T4, T5, and T6
-against existing, unmodified GitHub state. The write tier runs T7, T8, and T9 only
+against existing, unmodified GitHub state. The historical write tier runs T7, T8,
+and T9 only
 against `tests/mock-forge/`, the local recording GitHub-API mock introduced in PR
-#15. The rerun performed no real-GitHub writes and had no second write tier.
+#15. The 1.3.2 follow-up adds a separate T3 named-check task and corrected gh-axi
+T7–T9 cells. The reruns performed no real-GitHub writes.
 
 ## Experimental design
 
 Each task × condition cell has five repeats, with condition order deterministically
-shuffled within each repeat. Read versions contain 75 agent runs; write versions
-contain 45. Conditions are gh-ci, a minimal plain-`gh` instruction, and gh-axi with
+shuffled within each repeat. Read versions contain 75 agent runs; historical write
+versions contain 45, and the T3 follow-up contains 15. Conditions are gh-ci, a
+minimal plain-`gh` instruction, and gh-axi with
 its product SessionStart hook. Every cell uses a fresh git workspace and only the
 selected condition as project instructions.
 
@@ -29,15 +32,17 @@ five repeats; raw TSV rows and JSON aggregates remain under each version directo
 
 ## Frozen versions and fixtures
 
-The `--ghci` option accepts 1.2.3, 1.2.4, or 1.3.0 and maps them to repository
-commits recorded in the materializer. At startup the driver materializes that commit’s
+The `--ghci` option accepts 1.2.3, 1.2.4, 1.3.0, or 1.3.2 and maps them to
+repository commits recorded in the materializer. At startup the driver materializes that commit’s
 `gh-ci/SKILL.md` and `gh-ci/resources/ci.sh` with `git show` into an ignored payload
 directory. The materialized skill is the gh-ci condition; this prevents a checkout’s
 current skill from silently changing a historical run. `bench/mkpathshim.sh` builds
 the filtered executable directory, and each driver refuses to start unless `claude`
 still resolves and `gh-axi` does not resolve for the gh-ci/plain-gh conditions.
 The result tables select 1.2.3 for the read baseline, 1.2.4 for the write baseline,
-and 1.3.0 for both reruns.
+and 1.3.0 for the historical read/write reruns. Those 1.3.0 reruns pin commit
+`cf252806` and were run on 2026-09-12. The 1.3.2 named-check and corrected gh-axi
+follow-up pins commit `9594571c` and was run on 2026-09-14.
 Use a full clone when possible. In a shallow clone the materializer first tries the
 matching version tag, then fetches the pinned commit from `origin` at depth 1 into
 the ignored payload cache. To obtain the same history manually, run
@@ -59,6 +64,22 @@ to those keys. Set `BENCH_ANSWER_KEYS` to an operator-supplied directory contain
 before starting a benchmark if the variable is unset or a required key is missing.
 
 ## Reproduction
+
+The 1.3.2 named-check follow-up contains 15 T3 cells and a corrected 15-cell
+gh-axi T7–T9 rerun under `bench/write/results/1.3.2-ghaxi-rerun/`. T3 judge
+grading was re-run with untruncated commands and compact call-log evidence;
+per-run transcripts, call logs, and original and regraded judge outputs are
+retained privately by the maintainer outside this repository because they embed
+the private answer keys. For this follow-up, the repository retains only the result
+TSVs, aggregates, and manifest. The corrected rerun isolates the `GH_REPO`
+environment issue while supplying `REPO_NWO` to stand in for the
+repository identity from a real clone; gh-axi may still retry when given an
+explicit `--repo`/`-R` to `api`. The read tier was unaffected.
+
+T3 uses a local in-flight check: `scan_ruby` starts `in_progress` and flips to
+`completed`/`failure` after 60 seconds from its first observation after reset.
+`gh pr checks --watch` and `gh run watch` wait on all checks rather than one
+named check; runs using those commands are valid.
 
 Prerequisites are Bash, git, `gh`, `jq`, Python 3, Claude Code, and the development
 requirements listed by `tests/mock-forge/README.md`. From the repository root:
@@ -91,19 +112,37 @@ BENCH_ANSWER_KEYS=/path/to/private/keys \
 python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.0.tsv \
   bench/write/work/aggregate.1.3.0.json
 python3 bench/mktable.py bench/write/work/aggregate.1.3.0.json
+
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_TASKS=bench/write/tasks/tasks.named-check.tsv \
+  BENCH_RESULTS=bench/write/work/results.1.3.2-t3.tsv \
+  BENCH_RUNROOT=bench/write/runs/1.3.2-t3 \
+  bench/write/driver/bench.sh --ghci 1.3.2 1 5
+python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.2-t3.tsv \
+  bench/write/work/aggregate.1.3.2-t3.json
+python3 bench/mktable.py bench/write/work/aggregate.1.3.2-t3.json
+
+BENCH_ANSWER_KEYS=/path/to/private/keys \
+  BENCH_RESULTS=bench/write/work/results.1.3.2-ghaxi.tsv \
+  BENCH_RUNROOT=bench/write/runs/1.3.2-ghaxi \
+  bench/write/driver/bench.sh --ghci 1.3.2 1 5 '' C-ghaxi
+python3 bench/write/driver/aggregate.py bench/write/work/results.1.3.2-ghaxi.tsv \
+  bench/write/work/aggregate.1.3.2-ghaxi.json
+python3 bench/mktable.py bench/write/work/aggregate.1.3.2-ghaxi.json
 ```
 
 The separate `BENCH_RESULTS` and `BENCH_RUNROOT` paths prevent version runs from
 being appended together. A resumed command skips any already-recorded
 repeat/condition/task cell. Pass `--redo` before the positional arguments to remove
 that cell's result row and run directory and execute it again. The retained
-rerun cost was $15.02 ($8.01 read and $7.01 write), below the $20 stop boundary.
-Known limitations are live read-fixture drift, Actions log retention, and the
-300-character command-summary cutoff presented to the judge.
+historical 1.3.0 rerun cost was $15.02 ($8.01 read and $7.01 write), below the
+$20 stop boundary. Known limitations are live read-fixture drift, Actions log
+retention, and the 300-character command-summary cutoff used by the historical
+judge runs; T3 was regraded with untruncated commands and compact call-log evidence.
 
 ## Retained results
 
-All four tables intentionally use the same columns. Read success is the judge result;
+All six tables intentionally use the same columns. Read success is the judge result;
 write success reports call assertion and judge results. Token columns and wall time
 are medians.
 
@@ -174,3 +213,32 @@ are medians.
 | T9 | gh-ci | call 5/5; judge 4/5 | 125,978 (125,977–126,005) | 108,550 | 17,441 | 6 | 833 | 10.5 | 3 | 2 |
 | T9 | `gh` | call 5/5; judge 5/5 | 107,279 (106,773–107,362) | 96,873 | 10,400 | 6 | 593 | 9.1 | 3 | 2 |
 | T9 | gh-axi | call 5/5; judge 5/5 | 674,866 (569,713–852,212) | 651,471 | 23,363 | 32 | 5,416 | 67.6 | 16 | 15 |
+
+## Corrected gh-axi write rerun 1.3.2
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T7 | gh-axi | call 5/5; judge 5/5 | 314,357 (312,165–356,625) | 292,985 | 21,255 | 14 | 1,405 | 21.5 | 7 | 6 |
+| T8 | gh-axi | call 5/5; judge 4/5 | 212,748 (209,522–214,147) | 194,999 | 17,728 | 10 | 682 | 15.4 | 5 | 4 |
+| T9 | gh-axi | call 5/5; judge 5/5 | 558,884 (462,174–633,362) | 534,401 | 23,611 | 24 | 3,097 | 55.3 | 12 | 11 |
+
+## Named-check wait follow-up 1.3.2
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T3 | gh-ci | call 5/5; judge 5/5 | 128,140 (83,380–129,283) | 109,529 | 18,605 | 6 | 822 | 74.0 | 3 | 2 |
+| T3 | `gh` | call 4/5; judge 4/5 | 152,906 (152,720–152,965) | 139,219 | 13,679 | 8 | 828 | 71.2 | 4 | 3 |
+| T3 | gh-axi | call 1/5; judge 1/5 | 342,988 (299,454–551,742) | 324,725 | 18,547 | 16 | 2,620 | 58.5 | 8 | 7 |
+
+gh-ci used one check-wait command, while plain `gh` polled in the foreground.
+In four of five runs, gh-axi backgrounded its own poll and returned without
+reporting a conclusion. The retained gh-axi T3 runs never requested the
+single-check REST route and did receive nested rollup data, so they did not need
+rerunning.
+
+Corrections: the original 1.3.0 gh-axi rows above are preserved. The corrected
+rows run without `GH_REPO`. The agent process receives `REPO_NWO` because `gh`
+strips the port when matching the loopback remote against `GH_HOST`, so the mock
+remote cannot supply the repository identity that a real clone would; plain
+`gh` and gh-axi ignore it. gh-axi's explicit `--repo`/`-R` flags on `api` may
+still be rejected and retried. The read tier was unaffected.

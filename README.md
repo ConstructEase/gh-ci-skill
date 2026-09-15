@@ -27,12 +27,13 @@ examples. Run `ci.sh help` for the complete runtime command list.
 ## Benchmark results
 
 Three-way comparison between **gh-ci** (this skill), the plain **`gh`** CLI, and
-**gh-axi** in two tiers: five read tasks against real, unmodified GitHub state and
-three write tasks against the local recording GitHub-API mock in
+**gh-axi** in two historical tiers: five read tasks against real, unmodified GitHub
+state and three write tasks (T7–T9) against the local recording GitHub-API mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
 in PR #15. A nine-run tier on gh-ci 1.2.4 validated the mock once against real GitHub
 and agreed on eight of nine cells. Nothing was created, commented on, resolved, or
-pushed on any real repository during the read tier or the rerun.
+pushed on any real repository during the read tier or the rerun. The 1.3.2 follow-up
+adds T3 as a separate named-check wait task.
 
 ### Method
 
@@ -43,9 +44,9 @@ runs**, each followed by one LLM-judge call.
 report its conclusion; T4 read a failing Actions run's log and identify the cause;
 T5 check PR mergeability; T6 read a PR's conversation comments.
 
-**Write tasks** — T7 reply to a specific inline review comment inside its thread; T8
+**Write tasks** — the historical tier has T7 reply to a specific inline review comment inside its thread; T8
 post a top-level PR conversation comment; T9 mark a specific review thread resolved
-without commenting.
+without commenting. The 1.3.2 follow-up has T3 wait for the named `scan_ruby` check.
 
 **Conditions** — each run got a fresh temporary working directory whose *only*
 project instruction was that condition's file, with no other skills loaded and no
@@ -53,7 +54,7 @@ permission prompts:
 
 | Condition | Instruction given to the agent | Environment |
 |---|---|---|
-| gh-ci | The `gh-ci/SKILL.md` version named by each table: 1.2.3 read baseline, 1.2.4 write baseline, 1.3.0 reruns | Matching `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
+| gh-ci | The `gh-ci/SKILL.md` version named by each table: 1.2.3 read baseline, 1.2.4 write baseline, 1.3.0 historical reruns, 1.3.2 follow-up | Matching `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
 | `gh` | a minimal "you have the `gh` CLI, use it" note (189 B) | no skill; `gh-axi` removed from `PATH` |
 | gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
 
@@ -75,14 +76,16 @@ calls are distinct assistant message ids, token totals come from the terminal
 inter-quartile ranges** are reported across the five repeats, never means.
 
 **Pins** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 for the read baseline,
-1.2.4 for the write baseline, and 1.3.0 for both reruns · Claude Code CLI 2.1.267 ·
-agent and judge model `claude-sonnet-5` · read-baseline date **2026-09-11** · rerun
-date **2026-09-12**. The read baseline used about 100 GitHub core REST requests;
+1.2.4 for the write baseline, 1.3.0 (`cf252806`) for the historical read/write
+reruns, and 1.3.2 (`9594571c`) for the named-check and corrected gh-axi follow-up ·
+Claude Code CLI 2.1.267 · agent and judge model `claude-sonnet-5` · read-baseline
+date **2026-09-11** · historical rerun date **2026-09-12** · 1.3.2 follow-up
+date **2026-09-14**. The read baseline used about 100 GitHub core REST requests;
 the write tiers used the local mock.
 
 ### Results
 
-These four version tables use one schema. Read success is the judge result; write success reports deterministic call assertion and judge results. Token columns and wall time are medians across five repeats. Compare each tier’s adjacent version tables for the before/after result.
+These six result tables use one schema. Read success is the judge result; write success reports deterministic call assertion and judge results. Token columns and wall time are medians across five repeats. Compare each historical tier’s adjacent version tables for the before/after result; the final two tables report the 1.3.2 follow-up.
 
 #### Read 1.2.3
 
@@ -160,6 +163,14 @@ These four version tables use one schema. Read success is the judge result; writ
 | T9 | `gh` | call 5/5; judge 5/5 | 107,279 (106,773–107,362) | 96,873 | 10,400 | 6 | 593 | 9.1 | 3 | 2 |
 | T9 | gh-axi | call 5/5; judge 5/5 | 674,866 (569,713–852,212) | 651,471 | 23,363 | 32 | 5,416 | 67.6 | 16 | 15 |
 
+#### Corrected gh-axi write rerun (1.3.2)
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T7 | gh-axi | call 5/5; judge 5/5 | 314,357 (312,165–356,625) | 292,985 | 21,255 | 14 | 1,405 | 21.5 | 7 | 6 |
+| T8 | gh-axi | call 5/5; judge 4/5 | 212,748 (209,522–214,147) | 194,999 | 17,728 | 10 | 682 | 15.4 | 5 | 4 |
+| T9 | gh-axi | call 5/5; judge 5/5 | 558,884 (462,174–633,362) | 534,401 | 23,611 | 24 | 3,097 | 55.3 | 12 | 11 |
+
 The changes target turn cost: locate-and-run removes discovery, while PR-number check
 references, mergeability fields, and bounded failed logs remove fallback turns/context.
 gh-ci total input fell on T2, T4, T5, T6 and on T7 and T9, rose slightly on T1, and rose on T8 (147,032 → 205,542) where three of five runs hit the trailing-flag defect and re-posted; plain gh and gh-axi were unchanged within run-to-run noise.
@@ -188,10 +199,8 @@ the writes occurred.
   gh-ci runs the agent read `ci.sh pr` and then fell back to plain
   `gh pr view --json mergeable,...` — the extra turn is the whole difference on
   that row.
-- **T2 understates gh-ci's named-check wait.** The fixture check had already
-  completed, so `gh` and gh-axi could answer with a single one-shot probe. Neither
-  can actually *wait* on a named check; measuring that would need a check still in
-  flight, which this read-only fixture set could not provide.
+- **T2 understates gh-ci's named-check wait.** See the write-tier T3 follow-up,
+  which uses an in-flight mock check and measures the wait behavior directly.
 - **T4 measures the agent's filtering, not raw log size.** All three conditions
   piped or grepped the log rather than reading it whole, and Claude Code spills very
   large tool outputs to a file on its own — so gh-axi's 20,000-character log cap
@@ -202,12 +211,40 @@ the writes occurred.
 
 ### Write-side method history
 
+#### Named-check wait follow-up (1.3.2)
+
+| Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T3 | gh-ci | call 5/5; judge 5/5 | 128,140 (83,380–129,283) | 109,529 | 18,605 | 6 | 822 | 74.0 | 3 | 2 |
+| T3 | `gh` | call 4/5; judge 4/5 | 152,906 (152,720–152,965) | 139,219 | 13,679 | 8 | 828 | 71.2 | 4 | 3 |
+| T3 | gh-axi | call 1/5; judge 1/5 | 342,988 (299,454–551,742) | 324,725 | 18,547 | 16 | 2,620 | 58.5 | 8 | 7 |
+
+T3 shows the named-check wait is observable. gh-ci used one check-wait command;
+plain `gh` polled in the foreground. In four of five runs, gh-axi backgrounded
+its own poll and returned without reporting a conclusion. `gh pr checks --watch`
+and `gh run watch` are valid all-check waits, but neither waits for only one named
+check.
+
+Corrections: the original 1.3.0 gh-axi rows remain unchanged; the corrected
+gh-axi rows run without `GH_REPO`. The agent process receives `REPO_NWO` as the
+repository identity a real clone would provide because `gh` cannot match the
+mock remote's port to `GH_HOST`; plain `gh` and gh-axi ignore it. gh-axi still
+rejects an explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results
+were unaffected. The retained gh-axi T3 runs never requested the single-check
+REST route and did receive nested rollup data, so they did not need rerunning.
+T3 judge verdicts were rechecked with fuller command and call-log evidence;
+per-run transcripts, call logs, and original and regraded judge outputs are
+retained privately by the maintainer outside this repository because they embed
+the private answer keys. For this follow-up, the repository retains only the result
+TSVs, aggregates, and manifest.
+
 The write-side half uses the local recording mock in
 [`tests/mock-forge/`](https://github.com/ConstructEase/gh-ci-skill/pull/15), introduced
 in PR #15, reset for each cell and graded by the recorded HTTP call plus the LLM
-judge. It comprises 45 runs.
+judge. The historical write tier comprises 45 runs; T3 is a separate 15-run
+named-check follow-up.
 A prior 9-run real-GitHub validation tier on 1.2.4 agreed on 8/9 cells; that history
-was not rerun here. T3 (list review threads) is not part of either benchmark half.
+was not rerun here. T3 is the named-check wait follow-up in the write tier.
 
 No read task was dropped: all five were measurable against existing repository state
 without creating anything.
