@@ -19,16 +19,47 @@ selected condition as project instructions.
 
 The driver invokes Claude Code with `claude-sonnet-5`, a 240-second agent timeout,
 and a 120-second `claude-sonnet-5` judge timeout. The judge sees the task, reference
-answer, executed-command summary, and final answer. Write cells also grade the
-recorded accepted HTTP mutations: each GraphQL mutation occurrence is graded by
-its own outcome, the expected body must match completely, replies must target the
-selected inline comment, and resolves must occur exactly once for the selected
-thread without a comment.
+answer, executed-command summary, and final answer. Every read run is followed by
+exactly one LLM-judge call; a correct answer reached without executing a command is
+graded as a hallucination and counted as a failure. Write cells are graded by the
+recorded accepted HTTP-mutation assertion plus exactly one LLM-judge call: each
+GraphQL mutation occurrence is graded by its own outcome, the expected body must
+match completely, replies must target the selected inline comment, and resolves
+must occur exactly once for the selected thread without a comment.
 
-API calls are distinct assistant message IDs. Input, cache-read, cache-write, and
-output tokens come from the terminal stream result. `total input` is input +
-cache-read + cache-write. Tables report the median and the total-input IQR across
-five repeats; raw TSV rows and JSON aggregates remain under each version directory.
+Token usage and API/tool-call counts were collected from
+`claude -p --output-format stream-json` output, deduplicated by message ID. Input,
+cache-read, cache-write, and output tokens come from the terminal stream result.
+`total input` is input + cache-read + cache-write. Tables report the median and the
+total-input IQR across five repeats; raw TSV rows and JSON aggregates remain under
+each version directory.
+
+**Conditions** — each run got a fresh temporary working directory whose *only*
+project instruction was that condition's file, with no other skills loaded and no
+permission prompts:
+
+| Condition | Instruction given to the agent | Environment |
+|---|---|---|
+| gh-ci | The `gh-ci/SKILL.md` version named by each table: 1.2.3 read baseline, 1.2.4 write baseline, 1.3.0 historical reruns, 1.3.2 follow-up | Matching `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
+| `gh` | a minimal "you have the `gh` CLI, use it" note (189 B) | no skill; `gh-axi` removed from `PATH` |
+| gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
+
+**Read fixtures** — existing, unmodified repository state. Nothing was created,
+commented on, resolved, or pushed during the read tier.
+
+| Task | Fixture |
+|---|---|
+| T1, T2, T5 | `ConstructEase/sentry-basecamp-bot` PR #40, head `1312fe2c17bfcf9998a0da81030e051c49ad0a29` (checks: `scan_ruby` failing, `lint` and `test` passing; `mergeable: CONFLICTING`) |
+| T4 | `ConstructEase/sentry-basecamp-bot` Actions run `30991856371`, job `scan_ruby` |
+| T6 | `ConstructEase/app` PR #1653 (closed, 3 conversation comments) |
+
+**Pins** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 for the read baseline,
+1.2.4 for the write baseline, 1.3.0 (`cf252806`) for the historical read/write
+reruns, and 1.3.2 (`9594571c`) for the named-check and corrected gh-axi follow-up ·
+Claude Code CLI 2.1.267 · agent and judge model `claude-sonnet-5` · read-baseline
+date **2026-09-11** · historical rerun date **2026-09-12** · 1.3.2 follow-up
+date **2026-09-14**. The read baseline used about 100 GitHub core REST requests;
+the write tiers used the local mock.
 
 ## Frozen versions and fixtures
 
@@ -49,7 +80,8 @@ the ignored payload cache. To obtain the same history manually, run
 `git fetch --unshallow origin '+refs/heads/*:refs/remotes/origin/*'`.
 
 Read fixture identities and tool/model pins are recorded in the versioned manifests
-and README. The write fixture is reset before every cell, uses `GH_HOST` plus dummy
+and the experimental-design details above. The write fixture is reset before every
+cell, uses `GH_HOST` plus dummy
 tokens, and records all requests. Its containment depends on those environment
 routes. The prior nine-cell real-GitHub validation on 1.2.4 agreed with the mock on
 eight cells, but is historical context only and is not an executable harness mode.
@@ -140,6 +172,33 @@ $20 stop boundary. Known limitations are live read-fixture drift, Actions log
 retention, and the 300-character command-summary cutoff used by the historical
 judge runs; T3 was regraded with untruncated commands and compact call-log evidence.
 
+## How to read this
+
+- **Payload size alone is misleading.** The number that matters is total input
+  tokens across the whole session, because every extra turn re-reads the entire
+  prior context from cache. A tool whose output is 6× smaller but costs one more
+  round-trip is not cheaper. That is why `cache_read` dominates every row in the
+  detailed before table, and why the ranking tracks API calls far more closely than
+  it tracks payload bytes.
+- **Most of gh-ci 1.2.3's overhead here was the script-location probe.** Its
+  `SKILL.md` told the agent to probe candidate paths for `ci.sh` before running
+  anything; that cost a dedicated first turn in 24 of 25 gh-ci runs, on every
+  task, before any GitHub call happened.
+- **T5 exposed a capability gap in gh-ci 1.2.3, not a formatting difference.**
+  Its `ci.sh pr` did not return `mergeable`/`mergeStateStatus`, so in 5 of 5
+  gh-ci runs the agent read `ci.sh pr` and then fell back to plain
+  `gh pr view --json mergeable,...` — the extra turn is the whole difference on
+  that row.
+- **T2 understates gh-ci's named-check wait.** See the write-tier T3 follow-up,
+  which uses an in-flight mock check and measures the wait behavior directly.
+- **T4 measures the agent's filtering, not raw log size.** All three conditions
+  piped or grepped the log rather than reading it whole, and Claude Code spills very
+  large tool outputs to a file on its own — so gh-axi's 20,000-character log cap
+  showed up as fewer turns, not as an avoided context blow-up.
+- **These numbers rank ergonomics on five read tasks and three mocked write tasks
+  under one agent harness.** They do not rank the tools' capability surfaces, which
+  are not interchangeable.
+
 ## Retained results
 
 All six tables intentionally use the same columns. Read success is the judge result;
@@ -222,6 +281,13 @@ are medians.
 | T8 | gh-axi | call 5/5; judge 4/5 | 212,748 (209,522–214,147) | 194,999 | 17,728 | 10 | 682 | 15.4 | 5 | 4 |
 | T9 | gh-axi | call 5/5; judge 5/5 | 558,884 (462,174–633,362) | 534,401 | 23,611 | 24 | 3,097 | 55.3 | 12 | 11 |
 
+The original 1.3.0 gh-axi rows in the table above are preserved. The corrected
+rows here run without `GH_REPO`. The agent process receives `REPO_NWO` because
+`gh` strips the port when matching the loopback remote against `GH_HOST`, so
+the mock remote cannot supply the repository identity that a real clone would;
+plain `gh` and gh-axi ignore it. gh-axi's explicit `--repo`/`-R` flags on `api`
+may still be rejected and retried. The read tier was unaffected.
+
 ## Named-check wait follow-up 1.3.2
 
 | Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
@@ -236,9 +302,19 @@ reporting a conclusion. The retained gh-axi T3 runs never requested the
 single-check REST route and did receive nested rollup data, so they did not need
 rerunning.
 
-Corrections: the original 1.3.0 gh-axi rows above are preserved. The corrected
-rows run without `GH_REPO`. The agent process receives `REPO_NWO` because `gh`
-strips the port when matching the loopback remote against `GH_HOST`, so the mock
-remote cannot supply the repository identity that a real clone would; plain
-`gh` and gh-axi ignore it. gh-axi's explicit `--repo`/`-R` flags on `api` may
-still be rejected and retried. The read tier was unaffected.
+## Corrections
+
+The changes between the write 1.2.4 and 1.3.0 tables target turn cost:
+locate-and-run removes discovery, while PR-number check references,
+mergeability fields, and bounded failed logs remove fallback turns/context.
+gh-ci total input fell on T2, T4, T5, T6 and on T7 and T9, rose slightly on T1,
+and rose on T8 (147,032 → 205,542) where three of five runs hit the
+trailing-flag defect and re-posted; plain gh and gh-axi were unchanged within
+run-to-run noise.
+
+The gh-ci T8 dip is a known unfixed trailing-flag defect: three runs folded the
+trailing `--repo` flag into the comment body, then deleted and re-posted, so the
+call assertion counted two comment calls. The T7/T9 judge dips are grading
+artifacts: the judge receives commands truncated to 300 characters, and the
+1.3.0 locate-and-run one-liner puts the write subcommand beyond that cutoff;
+call-log assertions confirm the writes occurred.
