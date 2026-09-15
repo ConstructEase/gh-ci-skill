@@ -28,9 +28,10 @@ examples. Run `ci.sh help` for the complete runtime command list.
 
 Three-way comparison between **gh-ci** (this skill), the plain **`gh`** CLI, and
 **gh-axi**, using `claude -p` agents over five repeats per task/condition cell,
-reporting medians; latest measured version is **gh-ci 1.3.0** (write gh-axi rows
-corrected under 1.3.2). Full methodology, fixtures, reproduction steps, earlier
-versions and corrections: see [BENCHMARK.md](BENCHMARK.md).
+reporting medians. The read and write tiers were last measured on **gh-ci 1.3.0**,
+and the named-check wait on **gh-ci 1.3.2**. Full methodology, fixtures,
+reproduction steps, earlier versions and corrections: see
+[BENCHMARK.md](BENCHMARK.md).
 
 **Read tasks** — T1 read the CI check status for a PR; T2 wait for a *named* check
 and report its conclusion; T4 read a failing Actions run's log and identify the

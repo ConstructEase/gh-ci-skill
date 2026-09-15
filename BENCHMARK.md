@@ -315,21 +315,3 @@ call assertion counted two comment calls. The T7/T9 judge dips are grading
 artifacts: the judge receives commands truncated to 300 characters, and the
 1.3.0 locate-and-run one-liner puts the write subcommand beyond that cutoff;
 call-log assertions confirm the writes occurred.
-
-The original 1.3.0 gh-axi write rows remain unchanged in the Write 1.3.0 table
-above; the corrected gh-axi rows in "Corrected gh-axi write rerun 1.3.2" run
-without `GH_REPO`. The agent process receives `REPO_NWO` as the repository
-identity a real clone would provide because `gh` cannot match the mock remote's
-port to `GH_HOST`; plain `gh` and gh-axi ignore it. gh-axi still rejects an
-explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results were
-unaffected. The retained gh-axi T3 runs never requested the single-check REST
-route and did receive nested rollup data, so they did not need rerunning.
-T3 judge verdicts were rechecked with fuller command and call-log evidence;
-per-run transcripts, call logs, and original and regraded judge outputs are
-retained privately by the maintainer outside this repository because they embed
-the private answer keys. For this follow-up, the repository retains only the
-result TSVs, aggregates, and manifest.
-
-**T2 understates gh-ci's named-check wait.** See the write-tier T3 follow-up
-above, which uses an in-flight mock check and measures the wait behavior
-directly, rather than relying on the read-tier T2 numbers.
