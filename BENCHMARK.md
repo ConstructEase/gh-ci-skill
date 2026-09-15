@@ -27,10 +27,12 @@ GraphQL mutation occurrence is graded by its own outcome, the expected body must
 match completely, replies must target the selected inline comment, and resolves
 must occur exactly once for the selected thread without a comment.
 
-API calls are distinct assistant message IDs. Input, cache-read, cache-write, and
-output tokens come from the terminal stream result. `total input` is input +
-cache-read + cache-write. Tables report the median and the total-input IQR across
-five repeats; raw TSV rows and JSON aggregates remain under each version directory.
+Token usage and API/tool-call counts were collected from
+`claude -p --output-format stream-json` output, deduplicated by message ID. Input,
+cache-read, cache-write, and output tokens come from the terminal stream result.
+`total input` is input + cache-read + cache-write. Tables report the median and the
+total-input IQR across five repeats; raw TSV rows and JSON aggregates remain under
+each version directory.
 
 **Conditions** — each run got a fresh temporary working directory whose *only*
 project instruction was that condition's file, with no other skills loaded and no
