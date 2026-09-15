@@ -78,7 +78,8 @@ the ignored payload cache. To obtain the same history manually, run
 `git fetch --unshallow origin '+refs/heads/*:refs/remotes/origin/*'`.
 
 Read fixture identities and tool/model pins are recorded in the versioned manifests
-and README. The write fixture is reset before every cell, uses `GH_HOST` plus dummy
+and the experimental-design details above. The write fixture is reset before every
+cell, uses `GH_HOST` plus dummy
 tokens, and records all requests. Its containment depends on those environment
 routes. The prior nine-cell real-GitHub validation on 1.2.4 agreed with the mock on
 eight cells, but is historical context only and is not an executable harness mode.

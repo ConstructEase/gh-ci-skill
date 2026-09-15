@@ -41,7 +41,7 @@ cause; T5 check PR mergeability; T6 read a PR's conversation comments.
 inline review comment inside its thread; T8 post a top-level PR conversation
 comment; T9 mark a specific review thread resolved without commenting.
 
-#### Read (gh-ci 1.3.0)
+### Read (gh-ci 1.3.0)
 
 | Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -61,7 +61,7 @@ comment; T9 mark a specific review thread resolved without commenting.
 | T6 | `gh` | 5/5 | 68,866 (68,853–68,896) | 60,352 | 8,510 | 4 | 472 | 6.6 | 2 | 1 |
 | T6 | gh-axi | 5/5 | 75,162 (75,162–75,166) | 63,486 | 11,672 | 4 | 443 | 7.2 | 2 | 1 |
 
-#### Write (gh-ci 1.3.0; gh-axi rows corrected 1.3.2)
+### Write (gh-ci 1.3.0; gh-axi rows corrected 1.3.2)
 
 | Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -77,7 +77,7 @@ comment; T9 mark a specific review thread resolved without commenting.
 
 \* corrected rerun under the fixed mock, see BENCHMARK.md Corrections
 
-#### Named-check wait (gh-ci 1.3.2)
+### Named-check wait (gh-ci 1.3.2)
 
 | Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
 |---|---|---|---|---|---|---|---|---|---|---|
