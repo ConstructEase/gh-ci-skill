@@ -19,11 +19,13 @@ selected condition as project instructions.
 
 The driver invokes Claude Code with `claude-sonnet-5`, a 240-second agent timeout,
 and a 120-second `claude-sonnet-5` judge timeout. The judge sees the task, reference
-answer, executed-command summary, and final answer. Write cells also grade the
-recorded accepted HTTP mutations: each GraphQL mutation occurrence is graded by
-its own outcome, the expected body must match completely, replies must target the
-selected inline comment, and resolves must occur exactly once for the selected
-thread without a comment.
+answer, executed-command summary, and final answer. Every read run is followed by
+exactly one LLM-judge call; a correct answer reached without executing a command is
+graded as a hallucination and counted as a failure. Write cells are graded by the
+recorded accepted HTTP-mutation assertion plus exactly one LLM-judge call: each
+GraphQL mutation occurrence is graded by its own outcome, the expected body must
+match completely, replies must target the selected inline comment, and resolves
+must occur exactly once for the selected thread without a comment.
 
 API calls are distinct assistant message IDs. Input, cache-read, cache-write, and
 output tokens come from the terminal stream result. `total input` is input +
