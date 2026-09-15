@@ -30,6 +30,33 @@ output tokens come from the terminal stream result. `total input` is input +
 cache-read + cache-write. Tables report the median and the total-input IQR across
 five repeats; raw TSV rows and JSON aggregates remain under each version directory.
 
+**Conditions** — each run got a fresh temporary working directory whose *only*
+project instruction was that condition's file, with no other skills loaded and no
+permission prompts:
+
+| Condition | Instruction given to the agent | Environment |
+|---|---|---|
+| gh-ci | The `gh-ci/SKILL.md` version named by each table: 1.2.3 read baseline, 1.2.4 write baseline, 1.3.0 historical reruns, 1.3.2 follow-up | Matching `ci.sh` installed project-locally; `gh-axi` removed from `PATH` |
+| `gh` | a minimal "you have the `gh` CLI, use it" note (189 B) | no skill; `gh-axi` removed from `PATH` |
+| gh-axi | gh-axi's shipped `SKILL.md` (7,779 B) | its `SessionStart` dashboard hook enabled, since that is part of the product |
+
+**Read fixtures** — existing, unmodified repository state. Nothing was created,
+commented on, resolved, or pushed during the read tier.
+
+| Task | Fixture |
+|---|---|
+| T1, T2, T5 | `ConstructEase/sentry-basecamp-bot` PR #40, head `1312fe2c17bfcf9998a0da81030e051c49ad0a29` (checks: `scan_ruby` failing, `lint` and `test` passing; `mergeable: CONFLICTING`) |
+| T4 | `ConstructEase/sentry-basecamp-bot` Actions run `30991856371`, job `scan_ruby` |
+| T6 | `ConstructEase/app` PR #1653 (closed, 3 conversation comments) |
+
+**Pins** — `gh` 2.100.0 · gh-axi 0.1.31 · gh-ci 1.2.3 for the read baseline,
+1.2.4 for the write baseline, 1.3.0 (`cf252806`) for the historical read/write
+reruns, and 1.3.2 (`9594571c`) for the named-check and corrected gh-axi follow-up ·
+Claude Code CLI 2.1.267 · agent and judge model `claude-sonnet-5` · read-baseline
+date **2026-09-11** · historical rerun date **2026-09-12** · 1.3.2 follow-up
+date **2026-09-14**. The read baseline used about 100 GitHub core REST requests;
+the write tiers used the local mock.
+
 ## Frozen versions and fixtures
 
 The `--ghci` option accepts 1.2.3, 1.2.4, 1.3.0, or 1.3.2 and maps them to
@@ -140,6 +167,33 @@ $20 stop boundary. Known limitations are live read-fixture drift, Actions log
 retention, and the 300-character command-summary cutoff used by the historical
 judge runs; T3 was regraded with untruncated commands and compact call-log evidence.
 
+## How to read this
+
+- **Payload size alone is misleading.** The number that matters is total input
+  tokens across the whole session, because every extra turn re-reads the entire
+  prior context from cache. A tool whose output is 6× smaller but costs one more
+  round-trip is not cheaper. That is why `cache_read` dominates every row in the
+  detailed before table, and why the ranking tracks API calls far more closely than
+  it tracks payload bytes.
+- **Most of gh-ci 1.2.3's overhead here was the script-location probe.** Its
+  `SKILL.md` told the agent to probe candidate paths for `ci.sh` before running
+  anything; that cost a dedicated first turn in 24 of 25 gh-ci runs, on every
+  task, before any GitHub call happened.
+- **T5 exposed a capability gap in gh-ci 1.2.3, not a formatting difference.**
+  Its `ci.sh pr` did not return `mergeable`/`mergeStateStatus`, so in 5 of 5
+  gh-ci runs the agent read `ci.sh pr` and then fell back to plain
+  `gh pr view --json mergeable,...` — the extra turn is the whole difference on
+  that row.
+- **T2 understates gh-ci's named-check wait.** See the write-tier T3 follow-up,
+  which uses an in-flight mock check and measures the wait behavior directly.
+- **T4 measures the agent's filtering, not raw log size.** All three conditions
+  piped or grepped the log rather than reading it whole, and Claude Code spills very
+  large tool outputs to a file on its own — so gh-axi's 20,000-character log cap
+  showed up as fewer turns, not as an avoided context blow-up.
+- **These numbers rank ergonomics on five read tasks and three mocked write tasks
+  under one agent harness.** They do not rank the tools' capability surfaces, which
+  are not interchangeable.
+
 ## Retained results
 
 All six tables intentionally use the same columns. Read success is the judge result;
@@ -242,3 +296,38 @@ strips the port when matching the loopback remote against `GH_HOST`, so the mock
 remote cannot supply the repository identity that a real clone would; plain
 `gh` and gh-axi ignore it. gh-axi's explicit `--repo`/`-R` flags on `api` may
 still be rejected and retried. The read tier was unaffected.
+
+## Corrections
+
+The changes between the write 1.2.4 and 1.3.0 tables target turn cost:
+locate-and-run removes discovery, while PR-number check references,
+mergeability fields, and bounded failed logs remove fallback turns/context.
+gh-ci total input fell on T2, T4, T5, T6 and on T7 and T9, rose slightly on T1,
+and rose on T8 (147,032 → 205,542) where three of five runs hit the
+trailing-flag defect and re-posted; plain gh and gh-axi were unchanged within
+run-to-run noise.
+
+The gh-ci T8 dip is a known unfixed trailing-flag defect: three runs folded the
+trailing `--repo` flag into the comment body, then deleted and re-posted, so the
+call assertion counted two comment calls. The T7/T9 judge dips are grading
+artifacts: the judge receives commands truncated to 300 characters, and the
+1.3.0 locate-and-run one-liner puts the write subcommand beyond that cutoff;
+call-log assertions confirm the writes occurred.
+
+The original 1.3.0 gh-axi write rows remain unchanged in the Write 1.3.0 table
+above; the corrected gh-axi rows in "Corrected gh-axi write rerun 1.3.2" run
+without `GH_REPO`. The agent process receives `REPO_NWO` as the repository
+identity a real clone would provide because `gh` cannot match the mock remote's
+port to `GH_HOST`; plain `gh` and gh-axi ignore it. gh-axi still rejects an
+explicit `--repo`/`-R` on `api`, causing a retry. Read-tier results were
+unaffected. The retained gh-axi T3 runs never requested the single-check REST
+route and did receive nested rollup data, so they did not need rerunning.
+T3 judge verdicts were rechecked with fuller command and call-log evidence;
+per-run transcripts, call logs, and original and regraded judge outputs are
+retained privately by the maintainer outside this repository because they embed
+the private answer keys. For this follow-up, the repository retains only the
+result TSVs, aggregates, and manifest.
+
+**T2 understates gh-ci's named-check wait.** See the write-tier T3 follow-up
+above, which uses an in-flight mock check and measures the wait behavior
+directly, rather than relying on the read-tier T2 numbers.
