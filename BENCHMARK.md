@@ -279,6 +279,13 @@ are medians.
 | T8 | gh-axi | call 5/5; judge 4/5 | 212,748 (209,522–214,147) | 194,999 | 17,728 | 10 | 682 | 15.4 | 5 | 4 |
 | T9 | gh-axi | call 5/5; judge 5/5 | 558,884 (462,174–633,362) | 534,401 | 23,611 | 24 | 3,097 | 55.3 | 12 | 11 |
 
+The original 1.3.0 gh-axi rows in the table above are preserved. The corrected
+rows here run without `GH_REPO`. The agent process receives `REPO_NWO` because
+`gh` strips the port when matching the loopback remote against `GH_HOST`, so
+the mock remote cannot supply the repository identity that a real clone would;
+plain `gh` and gh-axi ignore it. gh-axi's explicit `--repo`/`-R` flags on `api`
+may still be rejected and retried. The read tier was unaffected.
+
 ## Named-check wait follow-up 1.3.2
 
 | Task | Condition | Success | Total input tok (IQR) | cache_read | cache_write | input | output | Wall s | API calls | Tool calls |
@@ -292,13 +299,6 @@ In four of five runs, gh-axi backgrounded its own poll and returned without
 reporting a conclusion. The retained gh-axi T3 runs never requested the
 single-check REST route and did receive nested rollup data, so they did not need
 rerunning.
-
-Corrections: the original 1.3.0 gh-axi rows above are preserved. The corrected
-rows run without `GH_REPO`. The agent process receives `REPO_NWO` because `gh`
-strips the port when matching the loopback remote against `GH_HOST`, so the mock
-remote cannot supply the repository identity that a real clone would; plain
-`gh` and gh-axi ignore it. gh-axi's explicit `--repo`/`-R` flags on `api` may
-still be rejected and retried. The read tier was unaffected.
 
 ## Corrections
 

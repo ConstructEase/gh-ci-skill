@@ -75,7 +75,7 @@ comment; T9 mark a specific review thread resolved without commenting.
 | T9 | `gh` | call 5/5; judge 5/5 | 107,279 (106,773–107,362) | 96,873 | 10,400 | 6 | 593 | 9.1 | 3 | 2 |
 | T9 | gh-axi\* | call 5/5; judge 5/5 | 558,884 (462,174–633,362) | 534,401 | 23,611 | 24 | 3,097 | 55.3 | 12 | 11 |
 
-\* corrected rerun under the fixed mock, see BENCHMARK.md Corrections
+\* corrected rerun under the fixed mock, see BENCHMARK.md "Corrected gh-axi write rerun 1.3.2"
 
 ### Named-check wait (gh-ci 1.3.2)
 
