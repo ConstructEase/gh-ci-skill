@@ -182,6 +182,57 @@ setup() {
 }
 
 # ---------------------------------------------------------------------------
+# regression: a trailing flag must never be folded into the posted body
+# ---------------------------------------------------------------------------
+
+@test "comment rejects a trailing flag instead of posting it as body text" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" comment 1 "CI is green" --repo owner/other
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--repo"* ]]
+  [ ! -f "$log" ]
+}
+
+@test "reply rejects a trailing flag instead of posting it as body text" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" reply 1 55 "thanks" --file /etc/hostname
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--file"* ]]
+}
+
+@test "comment posts a body after a -- separator that starts with --" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" comment 123 -- --looks-like-a-flag but is body text
+  [ "$status" -eq 0 ]
+  run grep -Fx 'body=--looks-like-a-flag but is body text' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "reply posts a body after a -- separator that starts with --" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" reply 123 456 -- --looks-like-a-flag but is body text
+  [ "$status" -eq 0 ]
+  run grep -Fx 'body=--looks-like-a-flag but is body text' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "comment with a single-dash leading body still posts unchanged" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" comment 123 - item one
+  [ "$status" -eq 0 ]
+  run grep -Fx 'body=- item one' "$log"
+  [ "$status" -eq 0 ]
+}
+
+@test "comment with an interior dash body still posts unchanged" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" comment 123 "well-formed body"
+  [ "$status" -eq 0 ]
+  run grep -Fx 'body=well-formed body' "$log"
+  [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
 # check-runs / check-wait: PR-number ref resolution
 # ---------------------------------------------------------------------------
 

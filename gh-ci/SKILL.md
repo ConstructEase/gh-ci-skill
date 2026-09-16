@@ -3,7 +3,7 @@ name: gh-ci
 description: GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
-  version: "1.3.4"
+  version: "1.3.5"
 ---
 
 # GitHub CI & PR Helper
@@ -63,8 +63,8 @@ Priority rationale:
 
 | Command | Description |
 |---|---|
-| `ci.sh reply <pr> <comment-id> [body]` | Reply to an inline review comment |
-| `ci.sh comment [pr] [body]` | Post a top-level PR comment |
+| `ci.sh reply <pr> <comment-id> [body \| --file F \| -- body \| stdin]` | Reply to an inline review comment. A `--`-prefixed body word is rejected unless preceded by `--` |
+| `ci.sh comment [pr] [body \| --file F \| -- body \| stdin]` | Post a top-level PR comment. A `--`-prefixed body word is rejected unless preceded by `--` |
 | `ci.sh resolve <thread-node-id>` | Mark a review thread resolved |
 | `ci.sh unresolve <thread-node-id>` | Mark a review thread unresolved |
 
