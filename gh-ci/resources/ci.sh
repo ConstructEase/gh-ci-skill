@@ -151,7 +151,7 @@ _read_body() {
     case "$arg" in
       --*|-[[:alpha:]]*)
         echo "error: unexpected flag '$arg' in body text" >&2
-        echo "Use --file <path>, stdin, or 'ci.sh ... -- $*' to post a body that starts with --" >&2
+        echo "To post a flag-shaped word literally, put -- before the body; alternatively use --file <path> or stdin." >&2
         exit 1
         ;;
     esac
