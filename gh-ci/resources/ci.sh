@@ -468,11 +468,11 @@ query($owner: String!, $repo: String!, $number: Int!) {
   reply)
     # Reply to an inline review comment (posts into the same thread).
     # The comment id here is the numeric databaseId (NOT the GraphQL node id).
-    # A body word starting with -- is rejected as a likely misplaced flag;
-    # use -- to end options if the body itself must start with --.
+    # A flag-shaped body word (--... or -<letter>...) is rejected as a likely
+    # misplaced flag; use -- to end options for legitimate dash-leading text.
     # Usage: ci.sh reply <pr> <comment-databaseId> <body>
     #    or: ci.sh reply <pr> <comment-databaseId> --file <path>
-    #    or: ci.sh reply <pr> <comment-databaseId> -- <body starting with -->
+    #    or: ci.sh reply <pr> <comment-databaseId> -- <dash-leading body>
     #    or: ci.sh reply <pr> <comment-databaseId>          (body from stdin)
     if [ $# -lt 2 ]; then
       echo "Usage: ci.sh reply <pr> <comment-databaseId> [<body> | --file F | stdin]" >&2
@@ -492,11 +492,11 @@ query($owner: String!, $repo: String!, $number: Int!) {
 
   comment)
     # Post a top-level PR conversation comment.
-    # A body word starting with -- is rejected as a likely misplaced flag;
-    # use -- to end options if the body itself must start with --.
+    # A flag-shaped body word (--... or -<letter>...) is rejected as a likely
+    # misplaced flag; use -- to end options for legitimate dash-leading text.
     # Usage: ci.sh comment [pr] <body>
     #    or: ci.sh comment [pr] --file <path>
-    #    or: ci.sh comment [pr] -- <body starting with -->
+    #    or: ci.sh comment [pr] -- <dash-leading body>
     #    or: ci.sh comment [pr]              (body from stdin)
     #   PR defaults to current branch's PR if omitted.
     _resolve_repo
@@ -595,11 +595,11 @@ PR read commands:
 PR write commands:
   reply <pr> <comment-databaseId> [<body> | --file F | -- <body> | (stdin)]
       Reply to an inline review comment. The id is the numeric databaseId.
-      A body word starting with -- is rejected unless preceded by --.
+      Flag-shaped body words (--... or -<letter>...) require a preceding --.
   comment [pr] [<body> | --file F | -- <body> | (stdin)]
       Post a top-level PR conversation comment.
       PR defaults to the current branch's PR.
-      A body word starting with -- is rejected unless preceded by --.
+      Flag-shaped body words (--... or -<letter>...) require a preceding --.
   resolve <thread-node-id>
       Mark a review thread resolved (node id, e.g. PRRT_kw...).
   unresolve <thread-node-id>

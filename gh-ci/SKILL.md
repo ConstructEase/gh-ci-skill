@@ -63,8 +63,8 @@ Priority rationale:
 
 | Command | Description |
 |---|---|
-| `ci.sh reply <pr> <comment-id> [body \| --file F \| -- body \| stdin]` | Reply to an inline review comment. A `--`-prefixed body word is rejected unless preceded by `--` |
-| `ci.sh comment [pr] [body \| --file F \| -- body \| stdin]` | Post a top-level PR comment. A `--`-prefixed body word is rejected unless preceded by `--` |
+| `ci.sh reply <pr> <comment-id> [body \| --file F \| -- body \| stdin]` | Reply to an inline review comment. Flag-shaped body words (`--...` or `-<letter>...`) require a preceding `--` |
+| `ci.sh comment [pr] [body \| --file F \| -- body \| stdin]` | Post a top-level PR comment. Flag-shaped body words (`--...` or `-<letter>...`) require a preceding `--` |
 | `ci.sh resolve <thread-node-id>` | Mark a review thread resolved |
 | `ci.sh unresolve <thread-node-id>` | Mark a review thread unresolved |
 
