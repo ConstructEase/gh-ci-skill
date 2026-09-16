@@ -200,6 +200,22 @@ setup() {
   [[ "$output" == *"--file"* ]]
 }
 
+@test "comment rejects a trailing short flag instead of posting it as body text" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" comment 1 "CI is green" -R owner/other
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"-R"* ]]
+  [ ! -f "$log" ]
+}
+
+@test "reply rejects a trailing short flag instead of posting it as body text" {
+  log="$BATS_TEST_TMPDIR/gh-calls"
+  GH_STUB_LOG="$log" run bash "$CI_SH" reply 1 55 "thanks" -R owner/other
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"-R"* ]]
+  [ ! -f "$log" ]
+}
+
 @test "comment posts a body after a -- separator that starts with --" {
   log="$BATS_TEST_TMPDIR/gh-calls"
   GH_STUB_LOG="$log" run bash "$CI_SH" comment 123 -- --looks-like-a-flag but is body text

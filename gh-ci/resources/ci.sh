@@ -121,8 +121,8 @@ _resolve_run() {
 }
 
 # Read a comment body from the positional args, --file <path>, or stdin.
-# A --prefixed positional arg is rejected as a likely misplaced flag unless it
-# comes after a literal `--` end-of-options separator, or stdin.
+# A flag-shaped positional arg is rejected as a likely misplaced flag unless
+# it comes after a literal `--` end-of-options separator, or stdin.
 # Usage: body=$(_read_body "$@")
 _read_body() {
   if [ "${1:-}" = "--file" ]; then
@@ -149,7 +149,7 @@ _read_body() {
       continue
     fi
     case "$arg" in
-      --*)
+      --*|-[[:alpha:]]*)
         echo "error: unexpected flag '$arg' in body text" >&2
         echo "Use --file <path>, stdin, or 'ci.sh ... -- $*' to post a body that starts with --" >&2
         exit 1
