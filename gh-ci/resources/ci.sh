@@ -121,6 +121,8 @@ _resolve_run() {
 }
 
 # Read a comment body from the positional args, --file <path>, or stdin.
+# A flag-shaped positional arg is rejected as a likely misplaced flag unless
+# it comes after a literal `--` end-of-options separator, or stdin.
 # Usage: body=$(_read_body "$@")
 _read_body() {
   if [ "${1:-}" = "--file" ]; then
@@ -128,15 +130,38 @@ _read_body() {
       echo "error: --file requires a path argument" >&2; exit 1
     fi
     cat "$2"
-  elif [ -n "${1:-}" ]; then
-    # Join all remaining args with single spaces so an unquoted multi-word body
-    # survives. IFS is pinned locally so the separator is a space regardless of
-    # ambient shell state.
-    local IFS=' '
-    printf '%s' "$*"
-  else
-    cat
+    return
   fi
+  if [ $# -eq 0 ]; then
+    cat
+    return
+  fi
+  local -a words=()
+  local seen_sep=0
+  local arg
+  for arg in "$@"; do
+    if [ "$seen_sep" -eq 1 ]; then
+      words+=("$arg")
+      continue
+    fi
+    if [ "$arg" = "--" ]; then
+      seen_sep=1
+      continue
+    fi
+    case "$arg" in
+      --*|-[[:alpha:]]*)
+        echo "error: unexpected flag '$arg' in body text" >&2
+        echo "To post a flag-shaped word literally, put -- before the body; alternatively use --file <path> or stdin." >&2
+        exit 1
+        ;;
+    esac
+    words+=("$arg")
+  done
+  # Join all remaining args with single spaces so an unquoted multi-word body
+  # survives. IFS is pinned locally so the separator is a space regardless of
+  # ambient shell state.
+  local IFS=' '
+  printf '%s' "${words[*]}"
 }
 
 cmd="${1:-help}"
@@ -443,8 +468,11 @@ query($owner: String!, $repo: String!, $number: Int!) {
   reply)
     # Reply to an inline review comment (posts into the same thread).
     # The comment id here is the numeric databaseId (NOT the GraphQL node id).
+    # A flag-shaped body word (--... or -<letter>...) is rejected as a likely
+    # misplaced flag; use -- to end options for legitimate dash-leading text.
     # Usage: ci.sh reply <pr> <comment-databaseId> <body>
     #    or: ci.sh reply <pr> <comment-databaseId> --file <path>
+    #    or: ci.sh reply <pr> <comment-databaseId> -- <dash-leading body>
     #    or: ci.sh reply <pr> <comment-databaseId>          (body from stdin)
     if [ $# -lt 2 ]; then
       echo "Usage: ci.sh reply <pr> <comment-databaseId> [<body> | --file F | stdin]" >&2
@@ -464,8 +492,11 @@ query($owner: String!, $repo: String!, $number: Int!) {
 
   comment)
     # Post a top-level PR conversation comment.
+    # A flag-shaped body word (--... or -<letter>...) is rejected as a likely
+    # misplaced flag; use -- to end options for legitimate dash-leading text.
     # Usage: ci.sh comment [pr] <body>
     #    or: ci.sh comment [pr] --file <path>
+    #    or: ci.sh comment [pr] -- <dash-leading body>
     #    or: ci.sh comment [pr]              (body from stdin)
     #   PR defaults to current branch's PR if omitted.
     _resolve_repo
@@ -562,11 +593,13 @@ PR read commands:
                                  state, mergeable, mergeStateStatus).
 
 PR write commands:
-  reply <pr> <comment-databaseId> [<body> | --file F | (stdin)]
+  reply <pr> <comment-databaseId> [<body> | --file F | -- <body> | (stdin)]
       Reply to an inline review comment. The id is the numeric databaseId.
-  comment [pr] [<body> | --file F | (stdin)]
+      Flag-shaped body words (--... or -<letter>...) require a preceding --.
+  comment [pr] [<body> | --file F | -- <body> | (stdin)]
       Post a top-level PR conversation comment.
       PR defaults to the current branch's PR.
+      Flag-shaped body words (--... or -<letter>...) require a preceding --.
   resolve <thread-node-id>
       Mark a review thread resolved (node id, e.g. PRRT_kw...).
   unresolve <thread-node-id>
