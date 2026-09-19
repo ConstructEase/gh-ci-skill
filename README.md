@@ -4,12 +4,6 @@
 
 An [agent skill](https://github.com/vercel-labs/skills) that wraps the GitHub CLI and GraphQL API into short, composable commands for CI monitoring and PR review.
 
-## Install
-
-```bash
-npx skills add ConstructEase/gh-ci-skill
-```
-
 ## What it does
 
 - **CI and check runs** — list, check status, wait for completion, fetch failed logs
