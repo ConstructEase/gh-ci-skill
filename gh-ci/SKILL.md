@@ -3,7 +3,7 @@ name: gh-ci
 description: DEPRECATED - no longer maintained; use gh-axi or gh directly. GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
-  version: "1.4.0"
+  version: "1.3.5"
 ---
 
 # GitHub CI & PR Helper
