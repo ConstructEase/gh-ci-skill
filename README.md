@@ -1,12 +1,8 @@
 # gh-ci
 
+> **DEPRECATED** - gh-ci is no longer maintained and will receive no further updates or fixes. Do not install it into new repositories. Existing consumers should remove the vendored `gh-ci` skill and call [`gh-axi`](https://github.com/kunchenguid/gh-axi) or the `gh` CLI directly instead.
+
 An [agent skill](https://github.com/vercel-labs/skills) that wraps the GitHub CLI and GraphQL API into short, composable commands for CI monitoring and PR review.
-
-## Install
-
-```bash
-npx skills add ConstructEase/gh-ci-skill
-```
 
 ## What it does
 

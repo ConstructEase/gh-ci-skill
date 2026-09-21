@@ -1,12 +1,14 @@
 ---
 name: gh-ci
-description: GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
+description: DEPRECATED - no longer maintained; use gh-axi or gh directly. GitHub CI and PR review helper. Use when monitoring CI runs, reading review threads, replying to PR comments, or resolving review feedback. Wraps gh CLI + GraphQL into short composable commands.
 metadata:
   author: calebl
   version: "1.3.5"
 ---
 
 # GitHub CI & PR Helper
+
+> **DEPRECATED** - gh-ci is no longer maintained and will receive no further updates or fixes. Do not install it into new repositories. Existing consumers should remove the vendored `gh-ci` skill and call [`gh-axi`](https://github.com/kunchenguid/gh-axi) or the `gh` CLI directly instead.
 
 A shell script that wraps the `gh` CLI and GitHub GraphQL API into short, composable subcommands for CI monitoring and PR review workflows.
 
